@@ -1,0 +1,4 @@
+[
+  { "name": "Code Server", "path": "/code/",     "img": "/static/apps/code.svg" },
+  { "name": "Portainer",   "path": "/portainer/", "img": "/static/apps/portainer.svg" }
+]
