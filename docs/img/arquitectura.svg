@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="555" viewBox="0 0 960 555" role="img" aria-label="Arquitectura de la práctica: el navegador entra por el puerto 80 al proxy nginx, que sirve el portal y reparte las rutas /code/, /portainer/, /whoami/, /mi-web/ y /adminer/ a sus servicios dentro de la red de Docker">
+  <rect x="0.5" y="0.5" width="959" height="554" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 8" refX="8" refY="4" markerWidth="10" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#4b5563"/>
+    </marker>
+    <marker id="arrow-todo" viewBox="0 0 10 8" refX="8" refY="4" markerWidth="10" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#9ca3af"/>
+    </marker>
+    <style>
+      .sans { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+      .mono { font-family: Consolas, ui-monospace, Menlo, monospace; }
+      .title { font-size: 22px; font-weight: 700; fill: #111827; }
+      .box { font-size: 16px; font-weight: 700; }
+      .body { font-size: 14px; fill: #111827; }
+      .cap { font-size: 13px; fill: #6b7280; }
+      .net { font-size: 13px; font-weight: 700; fill: #2496ed; }
+      .code { font-size: 13px; fill: #111827; }
+      .todo { fill: #6b7280; }
+      .wire { fill: none; stroke: #4b5563; stroke-width: 2; }
+      .wire-todo { fill: none; stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 6 4; }
+      .row { fill: #ffffff; stroke: #a7d9b8; stroke-width: 1; }
+      .row-todo { fill: #ffffff; stroke: #9ca3af; stroke-width: 1.5; stroke-dasharray: 6 4; }
+      .svc-todo { fill: #ffffff; stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 6 4; }
+    </style>
+  </defs>
+
+  <!-- Título -->
+  <text x="28" y="44" class="sans title">Arquitectura de la práctica</text>
+
+  <!-- red de Docker -->
+  <rect x="213" y="64" width="723" height="467" rx="16" fill="#f5fbff" stroke="#2496ed" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="227" y="86" class="sans net">red de Docker</text>
+
+  <!-- navegador -> proxy (:80) -->
+  <path class="wire" d="M186 126 H246" marker-end="url(#arrow)"/>
+  <rect x="196" y="116" width="34" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="213" y="130.5" text-anchor="middle" class="mono code" textLength="21.45" lengthAdjust="spacingAndGlyphs">:80</text>
+
+  <!-- navegador -->
+  <path d="M25 96 V90 Q25 81 34 81 H176 Q185 81 185 90 V96 Z" fill="#f3f4f6"/>
+  <line x1="25" y1="96" x2="185" y2="96" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="24" y="80" width="162" height="92" rx="10" fill="none" stroke="#6b7280" stroke-width="2"/>
+  <circle cx="36" cy="88.5" r="3" fill="#9ca3af"/>
+  <circle cx="46" cy="88.5" r="3" fill="#9ca3af"/>
+  <circle cx="56" cy="88.5" r="3" fill="#9ca3af"/>
+  <text x="105" y="120" text-anchor="middle" class="sans body" font-weight="700">Navegador</text>
+  <rect x="38" y="134" width="134" height="24" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="105" y="150.5" text-anchor="middle" class="mono code" textLength="121.55" lengthAdjust="spacingAndGlyphs">http://localhost/</text>
+
+  <!-- conexiones fila -> servicio -->
+  <path class="wire" d="M512 258 H558" marker-end="url(#arrow)"/>
+  <path class="wire" d="M512 316 H558" marker-end="url(#arrow)"/>
+  <path class="wire-todo" d="M512 374 H558" marker-end="url(#arrow-todo)"/>
+  <path class="wire-todo" d="M512 432 H558" marker-end="url(#arrow-todo)"/>
+  <path class="wire-todo" d="M512 490 H558" marker-end="url(#arrow-todo)"/>
+  <!-- adminer -> db (sin pasar por el proxy) -->
+  <path class="wire-todo" d="M756 490 H792" marker-end="url(#arrow-todo)"/>
+
+  <!-- proxy -->
+  <rect x="248" y="98" width="276" height="417" rx="12" fill="#e8f5ec" stroke="#009639" stroke-width="2"/>
+  <text x="264" y="122" class="sans box" fill="#00742c">proxy</text>
+  <text x="264" y="141" class="mono code" fill="#00742c" textLength="85.8" lengthAdjust="spacingAndGlyphs">nginx:alpine</text>
+  <line x1="260" y1="154" x2="512" y2="154" stroke="#a7d9b8" stroke-width="1"/>
+  <text x="264" y="180" class="sans cap">reglas en</text>
+  <rect x="326" y="165" width="84" height="22" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="333" y="180.5" class="mono code" textLength="71.5" lengthAdjust="spacingAndGlyphs">nginx.conf</text>
+
+  <!-- tabla de rutas -->
+  <rect x="260" y="199" width="252" height="30" rx="8" class="row"/>
+  <text x="272" y="218.5" class="mono code" textLength="7.15" lengthAdjust="spacingAndGlyphs">/</text>
+  <path d="M357 214 H368 M364 210.5 L368 214 L364 217.5" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="374" y="203" width="132" height="22" rx="6" fill="#f1edff" stroke="#7c5cff" stroke-width="1.5"/>
+  <text x="381" y="218.5" class="sans" font-size="13" font-weight="700" fill="#5b3fd6">portal:</text>
+  <text x="427" y="218.5" class="mono code" fill="#5b3fd6" textLength="71.5" lengthAdjust="spacingAndGlyphs">proxy/web/</text>
+
+  <rect x="260" y="243" width="252" height="30" rx="8" class="row"/>
+  <text x="272" y="262.5" class="mono code" textLength="42.9" lengthAdjust="spacingAndGlyphs">/code/</text>
+  <path d="M357 258 H368 M364 254.5 L368 258 L364 261.5" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="376" y="262.5" class="mono code" textLength="64.35" lengthAdjust="spacingAndGlyphs">code:8443</text>
+
+  <rect x="260" y="301" width="252" height="30" rx="8" class="row"/>
+  <text x="272" y="320.5" class="mono code" textLength="78.65" lengthAdjust="spacingAndGlyphs">/portainer/</text>
+  <path d="M357 316 H368 M364 312.5 L368 316 L364 319.5" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="376" y="320.5" class="mono code" textLength="100.1" lengthAdjust="spacingAndGlyphs">portainer:9000</text>
+
+  <rect x="260" y="359" width="252" height="30" rx="8" class="row-todo"/>
+  <text x="272" y="378.5" class="mono code todo" textLength="57.2" lengthAdjust="spacingAndGlyphs">/whoami/</text>
+  <path d="M357 374 H368 M364 370.5 L368 374 L364 377.5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="376" y="378.5" class="mono code todo" textLength="64.35" lengthAdjust="spacingAndGlyphs">whoami:80</text>
+
+  <rect x="260" y="417" width="252" height="30" rx="8" class="row-todo"/>
+  <text x="272" y="436.5" class="mono code todo" textLength="57.2" lengthAdjust="spacingAndGlyphs">/mi-web/</text>
+  <path d="M357 432 H368 M364 428.5 L368 432 L364 435.5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="376" y="436.5" class="mono code todo" textLength="64.35" lengthAdjust="spacingAndGlyphs">mi-web:80</text>
+
+  <rect x="260" y="475" width="252" height="30" rx="8" class="row-todo"/>
+  <text x="272" y="494.5" class="mono code todo" textLength="64.35" lengthAdjust="spacingAndGlyphs">/adminer/</text>
+  <path d="M357 490 H368 M364 486.5 L368 490 L364 493.5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="376" y="494.5" class="mono code todo" textLength="85.8" lengthAdjust="spacingAndGlyphs">adminer:8080</text>
+
+  <!-- servicios -->
+  <rect x="560" y="233" width="196" height="50" rx="12" fill="#e6f2fb" stroke="#007acc" stroke-width="2"/>
+  <text x="574" y="252.5" class="sans box" fill="#005a96">code</text>
+  <text x="574" y="271.5" class="sans body">code-server · puerto 8443</text>
+
+  <rect x="560" y="291" width="196" height="50" rx="12" fill="#e7f8fe" stroke="#13bef9" stroke-width="2"/>
+  <text x="574" y="310.5" class="sans box" fill="#0b7fa8">portainer</text>
+  <text x="574" y="329.5" class="sans body">Portainer · puerto 9000</text>
+
+  <rect x="560" y="349" width="196" height="50" rx="12" class="svc-todo"/>
+  <text x="574" y="368.5" class="sans box todo">whoami</text>
+  <text x="574" y="387.5" class="sans body todo">puerto 80 · Tarea 2</text>
+
+  <rect x="560" y="407" width="196" height="50" rx="12" class="svc-todo"/>
+  <text x="574" y="426.5" class="sans box todo">mi-web</text>
+  <text x="574" y="445.5" class="sans body todo">nginx · puerto 80 · Tarea 3</text>
+
+  <rect x="560" y="465" width="196" height="50" rx="12" class="svc-todo"/>
+  <text x="574" y="484.5" class="sans box todo">adminer</text>
+  <text x="574" y="503.5" class="sans body todo">puerto 8080 · Tarea 4</text>
+
+  <!-- db: solo accesible desde dentro de la red -->
+  <text x="855" y="414" text-anchor="middle" class="sans" font-size="12.5" fill="#6b7280">solo desde dentro</text>
+  <text x="855" y="430" text-anchor="middle" class="sans" font-size="12.5" fill="#6b7280">de la red</text>
+  <rect x="794" y="440" width="122" height="74" rx="12" class="svc-todo"/>
+  <text x="808" y="462" class="sans box todo">db</text>
+  <text x="808" y="482" class="sans body todo">MariaDB</text>
+  <text x="808" y="500" class="sans body todo">puerto 3306</text>
+
+  <!-- leyenda -->
+  <rect x="28" y="470" width="30" height="18" rx="5" fill="#ffffff" stroke="#4b5563" stroke-width="2"/>
+  <text x="68" y="483.5" class="sans" font-size="13" fill="#111827">ya funciona</text>
+  <rect x="28" y="498" width="30" height="18" rx="5" fill="#ffffff" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="68" y="511.5" class="sans" font-size="13" fill="#111827">lo añades tú</text>
+</svg>

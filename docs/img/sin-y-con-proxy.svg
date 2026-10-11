@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="486" viewBox="0 0 960 486" role="img" aria-label="Comparación: sin reverse proxy cada servicio publica su propio puerto; con reverse proxy solo se publica el puerto 80 y nginx reparte las peticiones por rutas">
+  <rect x="0.5" y="0.5" width="959" height="485" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 8" refX="8" refY="4" markerWidth="10" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#4b5563"/>
+    </marker>
+    <style>
+      .sans { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+      .mono { font-family: Consolas, ui-monospace, Menlo, monospace; }
+      .title { font-size: 22px; font-weight: 700; fill: #111827; }
+      .head { font-size: 16px; font-weight: 700; fill: #111827; }
+      .box { font-size: 16px; font-weight: 700; }
+      .body { font-size: 14px; fill: #111827; }
+      .cap { font-size: 13px; fill: #6b7280; }
+      .net { font-size: 13px; font-weight: 700; fill: #2496ed; }
+      .lbl { font-size: 13px; fill: #111827; }
+      .wire { fill: none; stroke: #4b5563; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <!-- Título -->
+  <text x="28" y="44" class="sans title">¿Por qué un reverse proxy?</text>
+
+  <!-- ===================== Panel izquierdo: sin proxy ===================== -->
+  <rect x="24" y="64" width="360" height="398" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+  <circle cx="44" cy="89.5" r="5" fill="#dc2626"/>
+  <text x="56" y="95" class="sans head">Sin reverse proxy</text>
+
+  <!-- red de Docker -->
+  <rect x="170" y="108" width="200" height="268" rx="16" fill="#f5fbff" stroke="#2496ed" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="184" y="129" class="sans net">red de Docker</text>
+
+  <!-- conexiones (una por servicio) -->
+  <path class="wire" d="M98 204 V232 Q98 240 106 240 H246" marker-end="url(#arrow)"/>
+  <path class="wire" d="M82 204 V282 Q82 290 90 290 H246" marker-end="url(#arrow)"/>
+  <path class="wire" d="M66 204 V332 Q66 340 74 340 H246" marker-end="url(#arrow)"/>
+
+  <!-- etiquetas de puerto sobre el borde de la red -->
+  <rect x="114" y="230" width="112" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="170" y="244.5" text-anchor="middle" class="mono lbl" textLength="100" lengthAdjust="spacingAndGlyphs">localhost:8443</text>
+  <rect x="114" y="280" width="112" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="170" y="294.5" text-anchor="middle" class="mono lbl" textLength="100" lengthAdjust="spacingAndGlyphs">localhost:9000</text>
+  <rect x="114" y="330" width="112" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="170" y="344.5" text-anchor="middle" class="mono lbl" textLength="100" lengthAdjust="spacingAndGlyphs">localhost:8080</text>
+
+  <!-- navegador -->
+  <path d="M41 160 V154 Q41 145 50 145 H130 Q139 145 139 154 V160 Z" fill="#f3f4f6"/>
+  <line x1="41" y1="160" x2="139" y2="160" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="40" y="144" width="100" height="60" rx="10" fill="none" stroke="#6b7280" stroke-width="2"/>
+  <circle cx="52" cy="152.5" r="3" fill="#9ca3af"/>
+  <circle cx="62" cy="152.5" r="3" fill="#9ca3af"/>
+  <circle cx="72" cy="152.5" r="3" fill="#9ca3af"/>
+  <text x="90" y="187" text-anchor="middle" class="sans body" font-weight="700">Navegador</text>
+
+  <!-- servicios -->
+  <rect x="248" y="220" width="108" height="40" rx="12" fill="#e6f2fb" stroke="#007acc" stroke-width="2"/>
+  <text x="302" y="245.5" text-anchor="middle" class="sans box" fill="#005a96">code</text>
+  <rect x="248" y="270" width="108" height="40" rx="12" fill="#e7f8fe" stroke="#13bef9" stroke-width="2"/>
+  <text x="302" y="295.5" text-anchor="middle" class="sans box" fill="#0b7fa8">portainer</text>
+  <rect x="248" y="320" width="108" height="40" rx="12" fill="#fff7e6" stroke="#f59e0b" stroke-width="2"/>
+  <text x="302" y="345.5" text-anchor="middle" class="sans box" fill="#b45309">adminer</text>
+
+  <!-- notas -->
+  <circle cx="44" cy="397.5" r="3" fill="#dc2626"/>
+  <text x="54" y="402" class="sans cap">Un puerto publicado por cada servicio</text>
+  <circle cx="44" cy="418.5" r="3" fill="#dc2626"/>
+  <text x="54" y="423" class="sans cap">Hay que recordar qué puerto es cada uno</text>
+  <circle cx="44" cy="439.5" r="3" fill="#dc2626"/>
+  <text x="54" y="444" class="sans cap">Todos los servicios quedan expuestos</text>
+
+  <!-- ===================== Panel derecho: con proxy ===================== -->
+  <rect x="396" y="64" width="540" height="398" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+  <circle cx="416" cy="89.5" r="5" fill="#16a34a"/>
+  <text x="428" y="95" class="sans head">Con reverse proxy</text>
+
+  <!-- red de Docker -->
+  <rect x="573" y="108" width="349" height="268" rx="16" fill="#f5fbff" stroke="#2496ed" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="587" y="129" class="sans net">red de Docker</text>
+
+  <!-- navegador -> proxy -->
+  <path class="wire" d="M512 174 H638" marker-end="url(#arrow)"/>
+  <rect x="524" y="164" width="98" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="573" y="178.5" text-anchor="middle" class="mono lbl" textLength="86" lengthAdjust="spacingAndGlyphs">localhost:80</text>
+
+  <!-- proxy -> servicios -->
+  <path class="wire" d="M684 204 V232 Q684 240 692 240 H798" marker-end="url(#arrow)"/>
+  <path class="wire" d="M668 204 V282 Q668 290 676 290 H798" marker-end="url(#arrow)"/>
+  <path class="wire" d="M652 204 V332 Q652 340 660 340 H798" marker-end="url(#arrow)"/>
+  <rect x="704.5" y="230" width="55" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="732" y="244.5" text-anchor="middle" class="mono lbl" textLength="43" lengthAdjust="spacingAndGlyphs">/code/</text>
+  <rect x="686.5" y="280" width="91" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="732" y="294.5" text-anchor="middle" class="mono lbl" textLength="78.6" lengthAdjust="spacingAndGlyphs">/portainer/</text>
+  <rect x="694" y="330" width="76" height="20" rx="5" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="732" y="344.5" text-anchor="middle" class="mono lbl" textLength="64.4" lengthAdjust="spacingAndGlyphs">/adminer/</text>
+
+  <!-- navegador -->
+  <path d="M413 160 V154 Q413 145 422 145 H502 Q511 145 511 154 V160 Z" fill="#f3f4f6"/>
+  <line x1="413" y1="160" x2="511" y2="160" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="412" y="144" width="100" height="60" rx="10" fill="none" stroke="#6b7280" stroke-width="2"/>
+  <circle cx="424" cy="152.5" r="3" fill="#9ca3af"/>
+  <circle cx="434" cy="152.5" r="3" fill="#9ca3af"/>
+  <circle cx="444" cy="152.5" r="3" fill="#9ca3af"/>
+  <text x="462" y="187" text-anchor="middle" class="sans body" font-weight="700">Navegador</text>
+
+  <!-- proxy -->
+  <rect x="640" y="144" width="76" height="60" rx="12" fill="#e8f5ec" stroke="#009639" stroke-width="2"/>
+  <text x="678" y="169" text-anchor="middle" class="sans box" fill="#00742c">proxy</text>
+  <text x="678" y="189" text-anchor="middle" class="sans body" fill="#00742c">nginx</text>
+
+  <!-- servicios -->
+  <rect x="800" y="220" width="108" height="40" rx="12" fill="#e6f2fb" stroke="#007acc" stroke-width="2"/>
+  <text x="854" y="245.5" text-anchor="middle" class="sans box" fill="#005a96">code</text>
+  <rect x="800" y="270" width="108" height="40" rx="12" fill="#e7f8fe" stroke="#13bef9" stroke-width="2"/>
+  <text x="854" y="295.5" text-anchor="middle" class="sans box" fill="#0b7fa8">portainer</text>
+  <rect x="800" y="320" width="108" height="40" rx="12" fill="#fff7e6" stroke="#f59e0b" stroke-width="2"/>
+  <text x="854" y="345.5" text-anchor="middle" class="sans box" fill="#b45309">adminer</text>
+
+  <!-- notas -->
+  <circle cx="416" cy="397.5" r="3" fill="#16a34a"/>
+  <text x="426" y="402" class="sans cap">Un único puerto publicado: el 80</text>
+  <circle cx="416" cy="418.5" r="3" fill="#16a34a"/>
+  <text x="426" y="423" class="sans cap">Rutas fáciles de recordar</text>
+  <circle cx="416" cy="439.5" r="3" fill="#16a34a"/>
+  <text x="426" y="444" class="sans cap">Los servicios solo se alcanzan a través del proxy</text>
+</svg>

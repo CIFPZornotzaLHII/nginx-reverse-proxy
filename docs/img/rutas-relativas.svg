@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="444" viewBox="0 0 960 444">
+  <title>Rutas absolutas y relativas detrás de un prefijo</title>
+  <style>
+    .s { font-family: Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+    .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+    .h1 { font-size: 22px; font-weight: bold; fill: #111827; }
+    .sub { font-size: 14px; fill: #6b7280; }
+    .cap { font-size: 13px; fill: #6b7280; }
+    .body { font-size: 14px; fill: #111827; }
+    .chip { font-size: 13px; fill: #111827; }
+  </style>
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="959" height="443" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="s h1" x="28" y="44">Rutas absolutas y relativas detrás de un prefijo</text>
+  <text class="s sub" x="28" y="72">La página está en <tspan class="m" fill="#111827">http://localhost/mi-web/</tspan></text>
+
+  <!-- ===== Fila 1: ruta absoluta (error) ===== -->
+  <circle cx="37" cy="106" r="9" fill="#dc2626"/>
+  <path d="M33.5,102.5 L40.5,109.5 M40.5,102.5 L33.5,109.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <text class="s" x="54" y="111" font-size="15" font-weight="bold" fill="#dc2626">Ruta absoluta (empieza por <tspan class="m">/</tspan>)</text>
+
+  <!-- A: HTML -->
+  <rect x="28" y="124" width="258" height="88" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s cap" x="42" y="150">En el HTML de la página</text>
+  <rect x="42" y="164" width="230" height="28" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="m chip" x="54" y="183">&lt;link href="<tspan fill="#dc2626" font-weight="bold">/</tspan>css/web.css"&gt;</text>
+
+  <line x1="286" y1="168" x2="326" y2="168" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+
+  <!-- B: navegador -->
+  <rect x="326" y="124" width="306" height="88" rx="12" fill="#ffffff"/>
+  <path d="M326,136 a12,12 0 0 1 12,-12 h282 a12,12 0 0 1 12,12 v10 h-306 z" fill="#f3f4f6"/>
+  <line x1="326" y1="146" x2="632" y2="146" stroke="#e5e7eb" stroke-width="1"/>
+  <circle cx="342" cy="135" r="4" fill="#9ca3af"/>
+  <circle cx="355" cy="135" r="4" fill="#9ca3af"/>
+  <circle cx="368" cy="135" r="4" fill="#9ca3af"/>
+  <rect x="326" y="124" width="306" height="88" rx="12" fill="none" stroke="#6b7280" stroke-width="2"/>
+  <text class="s body" x="342" y="172">El navegador pide</text>
+  <text class="m chip" x="342" y="196">http://localhost/css/web.css</text>
+
+  <line x1="632" y1="168" x2="672" y2="168" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+
+  <!-- C: error -->
+  <rect x="672" y="124" width="260" height="88" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text class="s body" x="688" y="152" fill="#111827">No encaja ningún location</text>
+  <text class="s body" x="688" y="174">→ archivos del portal (root)</text>
+  <text class="s" x="688" y="200" font-size="16" font-weight="bold" fill="#dc2626">404 Not Found</text>
+
+  <!-- ===== Fila 2: ruta relativa (ok) ===== -->
+  <circle cx="37" cy="246" r="9" fill="#16a34a"/>
+  <polyline points="32.5,246.5 35.8,249.8 41.5,242.5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="s" x="54" y="251" font-size="15" font-weight="bold" fill="#16a34a">Ruta relativa (sin <tspan class="m">/</tspan> al principio)</text>
+
+  <!-- A: HTML -->
+  <rect x="28" y="264" width="258" height="88" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s cap" x="42" y="290">En el HTML de la página</text>
+  <rect x="42" y="304" width="230" height="28" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="m chip" x="54" y="323">&lt;link href="css/web.css"&gt;</text>
+
+  <line x1="286" y1="308" x2="326" y2="308" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+
+  <!-- B: navegador -->
+  <rect x="326" y="264" width="306" height="88" rx="12" fill="#ffffff"/>
+  <path d="M326,276 a12,12 0 0 1 12,-12 h282 a12,12 0 0 1 12,12 v10 h-306 z" fill="#f3f4f6"/>
+  <line x1="326" y1="286" x2="632" y2="286" stroke="#e5e7eb" stroke-width="1"/>
+  <circle cx="342" cy="275" r="4" fill="#9ca3af"/>
+  <circle cx="355" cy="275" r="4" fill="#9ca3af"/>
+  <circle cx="368" cy="275" r="4" fill="#9ca3af"/>
+  <rect x="326" y="264" width="306" height="88" rx="12" fill="none" stroke="#6b7280" stroke-width="2"/>
+  <text class="s body" x="342" y="312">El navegador pide</text>
+  <text class="m chip" x="342" y="336">http://localhost/<tspan fill="#16a34a" font-weight="bold">mi-web/</tspan>css/web.css</text>
+
+  <line x1="632" y1="308" x2="672" y2="308" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+
+  <!-- C: ok -->
+  <rect x="672" y="264" width="260" height="88" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text class="m" x="688" y="292" font-size="14" fill="#111827">location /mi-web/</text>
+  <text class="s body" x="688" y="314">→ mi-web recibe <tspan class="m">/css/web.css</tspan></text>
+  <text class="s" x="688" y="340" font-size="16" font-weight="bold" fill="#16a34a">200 OK</text>
+
+  <!-- ===== Regla ===== -->
+  <rect x="28" y="376" width="904" height="44" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s body" x="46" y="403"><tspan font-weight="bold">Regla:</tspan> detrás de un prefijo, usa rutas relativas en enlaces, imágenes, CSS y JS.</text>
+</svg>

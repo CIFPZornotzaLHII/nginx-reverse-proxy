@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470">
+  <title>Volúmenes: el contenedor usa tus archivos</title>
+  <style>
+    .s { font-family: Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+    .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+    .h1 { font-size: 22px; font-weight: bold; fill: #111827; }
+    .tree { font-size: 14px; fill: #111827; }
+    .dir { font-weight: bold; }
+    .chip { font-size: 13px; fill: #111827; }
+    .cap { font-size: 12.5px; fill: #6b7280; }
+    .n1 { font-size: 14px; font-weight: bold; fill: #111827; }
+    .n2 { font-size: 13px; fill: #6b7280; }
+  </style>
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="959" height="469" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="s h1" x="28" y="44">Volúmenes: el contenedor usa tus archivos</text>
+
+  <!-- ===== Panel izquierdo: tu PC ===== -->
+  <rect x="28" y="68" width="280" height="282" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s" x="46" y="98" font-size="16" font-weight="bold" fill="#111827">Tu PC · carpeta del proyecto</text>
+  <line x1="44" y1="112" x2="292" y2="112" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- filas montadas (resaltadas) -->
+  <rect x="64" y="142" width="232" height="24" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5"/>
+  <rect x="64" y="211" width="232" height="127" rx="8" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5"/>
+  <g stroke="#9ca3af" stroke-width="1.5" fill="none">
+    <path d="M53,138 V223 M53,153 H64 M53,223 H64"/>
+    <path d="M79,234 V321 M79,249 H94 M79,273 H94 M79,297 H94 M79,321 H94"/>
+  </g>
+  <g class="m tree">
+    <text class="dir" x="48" y="132">proxy/</text>
+    <text x="74" y="158">nginx.conf</text>
+    <text class="dir" x="74" y="228">web/</text>
+    <text x="100" y="254">index.html</text>
+    <text x="100" y="278">apps.js</text>
+    <text x="100" y="302">estilo.css</text>
+    <text class="dir" x="100" y="326">img/</text>
+  </g>
+
+  <!-- ===== Panel derecho: contenedor ===== -->
+  <rect x="632" y="68" width="300" height="282" rx="12" fill="#e8f5ec" stroke="#009639" stroke-width="2"/>
+  <text class="s" x="650" y="98" font-size="16" font-weight="bold" fill="#00742c">Contenedor proxy <tspan class="m" font-size="13" font-weight="normal">(nginx:alpine)</tspan></text>
+  <line x1="648" y1="112" x2="916" y2="112" stroke="#b7dfc3" stroke-width="1"/>
+
+  <rect x="644" y="142" width="276" height="24" rx="8" fill="#ffffff" stroke="#6b9e7c" stroke-width="1.5"/>
+  <rect x="644" y="211" width="276" height="127" rx="8" fill="#ffffff" stroke="#6b9e7c" stroke-width="1.5"/>
+  <g stroke="#6b9e7c" stroke-width="1.5" fill="none">
+    <path d="M657,146 V153 H672"/>
+    <path d="M657,234 V321 M657,249 H672 M657,273 H672 M657,297 H672 M657,321 H672"/>
+  </g>
+  <g class="m tree">
+    <text class="dir" x="652" y="132">/etc/nginx/conf.d/</text>
+    <text x="678" y="158">default.conf</text>
+    <text class="dir" x="652" y="228">/usr/share/nginx/html/</text>
+    <text x="678" y="254">index.html</text>
+    <text x="678" y="278">apps.js</text>
+    <text x="678" y="302">estilo.css</text>
+    <text class="dir" x="678" y="326">img/</text>
+  </g>
+
+  <!-- ===== Centro: líneas de docker-compose.yml ===== -->
+  <text class="s cap" x="470" y="104" text-anchor="middle">en <tspan class="m">docker-compose.yml</tspan>, sección <tspan class="m">volumes:</tspan></text>
+
+  <!-- flecha 1: nginx.conf -> default.conf -->
+  <line x1="296" y1="153" x2="644" y2="153" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+  <rect x="328" y="129" width="284" height="48" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="m chip" x="342" y="148">./proxy/nginx.conf:</text>
+  <text class="m chip" x="342" y="167">/etc/nginx/conf.d/default.conf:ro</text>
+
+  <!-- flecha 2: web/ -> /usr/share/nginx/html/ -->
+  <line x1="296" y1="223" x2="644" y2="223" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+  <rect x="328" y="199" width="284" height="48" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="m chip" x="342" y="218">./proxy/web:</text>
+  <text class="m chip" x="342" y="237">/usr/share/nginx/html:ro</text>
+
+  <text class="s cap" x="470" y="276" text-anchor="middle">arriba: ruta en tu PC · abajo: ruta en el contenedor</text>
+  <text class="s cap" x="470" y="296" text-anchor="middle">es el mismo archivo, no una copia</text>
+
+  <!-- ===== Notas ===== -->
+  <rect x="28" y="370" width="250" height="74" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s n1" x="44" y="399">Cambias algo en <tspan class="m">web/</tspan></text>
+  <text class="s n2" x="44" y="423">→ recarga el navegador (F5)</text>
+
+  <rect x="294" y="370" width="270" height="74" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s n1" x="310" y="399">Cambias <tspan class="m">nginx.conf</tspan></text>
+  <text class="s n2" x="310" y="423">→ <tspan class="m" fill="#111827">docker compose restart proxy</tspan></text>
+
+  <rect x="580" y="370" width="352" height="74" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="2"/>
+  <text class="s n1" x="596" y="399"><tspan class="m">:ro</tspan> = solo lectura</text>
+  <text class="s n2" x="596" y="423">→ el contenedor no puede modificar tus archivos</text>
+</svg>

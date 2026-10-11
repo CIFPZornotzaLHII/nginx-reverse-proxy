@@ -1,4 +1,7 @@
-node_modules
-npm-debug.log*
-.DS_Store
+# Claves: viven en tu PC, NUNCA en git
 .env
+
+# Windows / macOS
+desktop.ini
+Thumbs.db
+.DS_Store

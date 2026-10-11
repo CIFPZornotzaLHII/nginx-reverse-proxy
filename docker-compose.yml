@@ -1,62 +1,42 @@
-version: '3.9'
-services:
-  app:
-    container_name: my-node-app
-    build: ./app
-    restart: unless-stopped
-    expose:
-      - '3000'
-    volumes:
-      - ./app/config:/config:ro
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - '-qO-'
-        - http://localhost:3000/health
-      interval: 10s
-      timeout: 3s
-      retries: 5
+# Práctica de reverse proxy: nginx en el puerto 80 reparte las peticiones entre los servicios.
+#
+#   docker compose up -d                       ← siempre desde esta carpeta
+#     http://localhost/              → portal (proxy/web/)
+#     http://localhost/code/         → code-server
+#     http://localhost/portainer/    → Portainer
+#
+# Solo el proxy publica un puerto ("ports"). El resto de servicios no son accesibles desde fuera:
+# se llega a ellos a través del proxy, que los encuentra por su nombre de servicio (code, portainer…).
 
-  code:
-    container_name: code
-    image: lscr.io/linuxserver/code-server:latest
-    restart: always
-    expose:
-      - '8443'
+services:
+  proxy:                        # reverse proxy + portal
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"                 # ¿Puerto 80 ocupado en tu PC? Usa otro: "8080:80"
     volumes:
-      - ./:/config/workspace
-      - code_config:/config
-      - ./codeserver-config.yaml:/config/config.yaml:ro
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro   # la configuración
+      - ./proxy/web:/usr/share/nginx/html:ro                   # la web del portal
+
+  code:                         # VS Code en el navegador → /code/
+    image: lscr.io/linuxserver/code-server:latest
+    restart: unless-stopped
     environment:
       PUID: 1000
       PGID: 1000
       TZ: Europe/Madrid
-      PASSWORD: ${CODE_PASSWORD}
+      PASSWORD: "${CODE_PASSWORD:?Falta CODE_PASSWORD: crea el fichero .env a partir de .env.template}"
+    volumes:
+      - code_config:/config
+      - ./:/config/workspace    # el propio proyecto: puedes editarlo desde /code/
 
-  portainer:
-    container_name: portainer
+  portainer:                    # gestión de Docker desde el navegador → /portainer/
     image: portainer/portainer-ce:latest
-    restart: always
-    expose:
-      - '9000'
+    restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
 
-  nginx:
-    container_name: nginx-proxy
-    image: nginx:alpine
-    restart: unless-stopped
-    depends_on:
-      - app
-      - code
-      - portainer
-    ports:
-      - '80:80'
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-
 volumes:
-  portainer_data: null
-  code_config: null
+  code_config:
+  portainer_data:

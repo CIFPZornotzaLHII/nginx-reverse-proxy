@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="724" viewBox="0 0 960 724">
+  <title>Recorrido de una petición por el proxy</title>
+  <style>
+    .s { font-family: Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+    .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+    .h1 { font-size: 22px; font-weight: bold; fill: #111827; }
+    .st { font-size: 15px; font-weight: bold; fill: #111827; }
+    .ex { font-size: 13px; fill: #6b7280; }
+    .cap { font-size: 12.5px; fill: #6b7280; }
+    .num { font-size: 14px; font-weight: bold; fill: #ffffff; }
+  </style>
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="959" height="723" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="s h1" x="28" y="44">Recorrido de una petición por el proxy</text>
+
+  <!-- línea vertical que une los pasos -->
+  <line x1="48" y1="96" x2="48" y2="650" stroke="#d1d5db" stroke-width="2"/>
+
+  <!-- separadores -->
+  <g stroke="#e5e7eb" stroke-width="1">
+    <line x1="74" y1="166" x2="932" y2="166"/>
+    <line x1="74" y1="354" x2="932" y2="354"/>
+    <line x1="74" y1="482" x2="932" y2="482"/>
+    <line x1="74" y1="608" x2="932" y2="608"/>
+  </g>
+
+  <!-- ===== Paso 1 ===== -->
+  <circle cx="48" cy="96" r="13" fill="#111827"/>
+  <text class="s num" x="48" y="101" text-anchor="middle">1</text>
+  <text class="s st" x="74" y="101">El navegador pide una URL</text>
+  <text class="s ex" x="74" y="121">La petición llega al proxy (puerto <tspan class="m">80</tspan>)</text>
+
+  <g>
+    <rect x="380" y="72" width="420" height="76" rx="12" fill="#ffffff"/>
+    <path d="M380,84 a12,12 0 0 1 12,-12 h396 a12,12 0 0 1 12,12 v12 h-420 z" fill="#f3f4f6"/>
+    <line x1="380" y1="96" x2="800" y2="96" stroke="#e5e7eb" stroke-width="1"/>
+    <circle cx="397" cy="84" r="4.5" fill="#9ca3af"/>
+    <circle cx="411" cy="84" r="4.5" fill="#9ca3af"/>
+    <circle cx="425" cy="84" r="4.5" fill="#9ca3af"/>
+    <rect x="380" y="72" width="420" height="76" rx="12" fill="none" stroke="#6b7280" stroke-width="2"/>
+    <rect x="394" y="106" width="392" height="30" rx="6" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="406" y="126" font-size="14" fill="#111827">http://localhost/portainer/api/status</text>
+  </g>
+
+  <!-- ===== Paso 2 ===== -->
+  <circle cx="48" cy="208" r="13" fill="#111827"/>
+  <text class="s num" x="48" y="213" text-anchor="middle">2</text>
+  <text class="s st" x="74" y="213">nginx elige el <tspan class="m">location</tspan> que encaja</text>
+  <text class="s ex" x="74" y="233">Compara la ruta con cada <tspan class="m">location</tspan></text>
+
+  <g>
+    <!-- fila 1 -->
+    <rect x="380" y="184" width="390" height="28" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="394" y="203" font-size="14" fill="#6b7280">location = /code</text>
+    <path d="M695,193 L705,203 M705,193 L695,203" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+    <text class="s" x="714" y="203" font-size="13" fill="#dc2626">no</text>
+    <!-- fila 2 -->
+    <rect x="380" y="218" width="390" height="28" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="394" y="237" font-size="14" fill="#6b7280">location /code/</text>
+    <path d="M695,227 L705,237 M705,227 L695,237" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+    <text class="s" x="714" y="237" font-size="13" fill="#dc2626">no</text>
+    <!-- fila 3 -->
+    <rect x="380" y="252" width="390" height="28" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="394" y="271" font-size="14" fill="#6b7280">location = /portainer</text>
+    <path d="M695,261 L705,271 M705,261 L695,271" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+    <text class="s" x="714" y="271" font-size="13" fill="#dc2626">no</text>
+    <!-- fila 4: la que encaja -->
+    <rect x="380" y="286" width="390" height="28" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <text class="m" x="394" y="305" font-size="14" font-weight="bold" fill="#111827">location /portainer/</text>
+    <polyline points="693,300 698,305 707,295" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text class="s" x="714" y="305" font-size="13" font-weight="bold" fill="#16a34a">encaja</text>
+
+    <text class="s cap" x="380" y="336">Si no encaja ninguno → archivo del portal (<tspan class="m">root</tspan>)</text>
+  </g>
+
+  <!-- ===== Paso 3 ===== -->
+  <circle cx="48" cy="396" r="13" fill="#111827"/>
+  <text class="s num" x="48" y="401" text-anchor="middle">3</text>
+  <text class="s st" x="74" y="401"><tspan class="m">rewrite</tspan> quita el prefijo</text>
+  <text class="s ex" x="74" y="421">El servicio recibe la ruta sin <tspan class="m">/portainer</tspan></text>
+
+  <g>
+    <rect x="380" y="372" width="290" height="28" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="392" y="391" font-size="13" fill="#111827">rewrite ^/portainer(/.*)$ $1 break;</text>
+
+    <text class="m" x="380" y="436" font-size="16" fill="#dc2626" textLength="88" lengthAdjust="spacingAndGlyphs">/portainer</text>
+    <line x1="378" y1="431" x2="470" y2="431" stroke="#dc2626" stroke-width="2"/>
+    <text class="m" x="470" y="436" font-size="16" fill="#111827" textLength="97" lengthAdjust="spacingAndGlyphs">/api/status</text>
+    <line x1="588" y1="431" x2="636" y2="431" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+    <text class="m" x="652" y="436" font-size="16" font-weight="bold" fill="#16a34a" textLength="97" lengthAdjust="spacingAndGlyphs">/api/status</text>
+
+    <text class="s cap" x="380" y="458">prefijo: se quita</text>
+    <text class="s cap" x="652" y="458">lo que llega a portainer</text>
+  </g>
+
+  <!-- ===== Paso 4 ===== -->
+  <circle cx="48" cy="524" r="13" fill="#111827"/>
+  <text class="s num" x="48" y="529" text-anchor="middle">4</text>
+  <text class="s st" x="74" y="529"><tspan class="m">proxy_pass</tspan> la reenvía al servicio</text>
+  <text class="s ex" x="74" y="549">El proxy la envía al contenedor</text>
+
+  <g>
+    <rect x="380" y="518" width="236" height="28" rx="6" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+    <text class="m" x="392" y="537" font-size="13" fill="#111827">proxy_pass http://$destino;</text>
+
+    <line x1="616" y1="532" x2="760" y2="532" stroke="#4b5563" stroke-width="2" marker-end="url(#flecha)"/>
+    <rect x="626" y="507" width="124" height="20" rx="4" fill="#ffffff"/>
+    <text class="m" x="688" y="521" font-size="13" fill="#111827" text-anchor="middle">GET /api/status</text>
+
+    <rect x="760" y="500" width="172" height="64" rx="12" fill="#e7f8fe" stroke="#13bef9" stroke-width="2"/>
+    <text class="s" x="846" y="526" font-size="16" font-weight="bold" fill="#0b7fa8" text-anchor="middle">portainer</text>
+    <text class="s" x="846" y="548" font-size="14" fill="#111827" text-anchor="middle">puerto <tspan class="m">9000</tspan></text>
+
+    <text class="s cap" x="380" y="586"><tspan class="m" fill="#111827">$destino = portainer:9000</tspan> (nombre del servicio en docker-compose)</text>
+  </g>
+
+  <!-- ===== Paso 5 ===== -->
+  <circle cx="48" cy="650" r="13" fill="#111827"/>
+  <text class="s num" x="48" y="655" text-anchor="middle">5</text>
+  <text class="s st" x="74" y="655">La respuesta vuelve al navegador</text>
+  <text class="s ex" x="74" y="675">por el mismo camino, a través del proxy</text>
+
+  <g>
+    <!-- navegador -->
+    <rect x="380" y="626" width="240" height="72" rx="12" fill="#ffffff"/>
+    <path d="M380,638 a12,12 0 0 1 12,-12 h216 a12,12 0 0 1 12,12 v12 h-240 z" fill="#f3f4f6"/>
+    <line x1="380" y1="650" x2="620" y2="650" stroke="#e5e7eb" stroke-width="1"/>
+    <circle cx="397" cy="638" r="4.5" fill="#9ca3af"/>
+    <circle cx="411" cy="638" r="4.5" fill="#9ca3af"/>
+    <circle cx="425" cy="638" r="4.5" fill="#9ca3af"/>
+    <rect x="380" y="626" width="240" height="72" rx="12" fill="none" stroke="#6b7280" stroke-width="2"/>
+    <rect x="394" y="660" width="72" height="26" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+    <text class="m" x="430" y="678" font-size="13" font-weight="bold" fill="#16a34a" text-anchor="middle">200 OK</text>
+    <text class="s" x="478" y="678" font-size="13" fill="#6b7280">datos de portainer</text>
+
+    <!-- proxy -->
+    <rect x="680" y="639" width="110" height="46" rx="12" fill="#e8f5ec" stroke="#009639" stroke-width="2"/>
+    <text class="s" x="735" y="668" font-size="16" font-weight="bold" fill="#00742c" text-anchor="middle">proxy</text>
+
+    <!-- camino de vuelta (discontinuo) -->
+    <path d="M846,564 V662 H790" fill="none" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+    <line x1="680" y1="662" x2="620" y2="662" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+  </g>
+</svg>

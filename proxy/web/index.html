@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aplicaciones</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header>
+    <h1 id="titulo">Aplicaciones</h1>
+    <p class="sub" id="subtitulo"></p>
+  </header>
+  <main id="apps" class="rejilla"></main>
+  <footer id="pie"></footer>
+  <script src="apps.js"></script>
+  <script>
+    // Los textos y las cajas salen de apps.js
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    document.title = PORTAL.titulo;
+    document.getElementById('titulo').textContent = PORTAL.titulo;
+    document.getElementById('subtitulo').textContent = PORTAL.subtitulo;
+    document.getElementById('pie').textContent = PORTAL.pie;
+    document.getElementById('apps').innerHTML = APPS.map(a => `
+      <a class="caja" href="${esc(a.ruta)}">
+        <img src="${esc(a.imagen)}" alt="">
+        <span class="nombre">${esc(a.nombre)}</span>
+        <span class="desc">${esc(a.descripcion || '')}</span>
+      </a>`).join('');
+  </script>
+</body>
+</html>

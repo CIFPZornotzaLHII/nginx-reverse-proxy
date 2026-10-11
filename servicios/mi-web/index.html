@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi web</title>
+  <link rel="stylesheet" href="/css/web.css">
+</head>
+<body>
+  <main class="tarjeta">
+    <h1>Hola, soy <span class="nombre">tu nombre</span></h1>
+    <p>Esta web la sirve un contenedor <code>nginx</code> propio, y le llega a través del reverse proxy.</p>
+    <p class="ruta">Estás en <code id="url"></code></p>
+    <a class="boton" href="/">Volver al portal</a>
+  </main>
+  <script>document.getElementById('url').textContent = location.href;</script>
+</body>
+</html>
