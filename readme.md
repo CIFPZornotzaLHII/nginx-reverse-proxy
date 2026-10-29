@@ -1,6 +1,6 @@
 # 🔀 Práctica: reverse proxy con nginx y Docker
 
-En esta práctica vas a montar un **reverse proxy**: un único nginx que recibe todas las peticiones en el puerto 80 y las reparte entre varios servicios según la ruta (`/code/`, `/portainer/`, `/whoami/`…). Es lo que hay delante de casi cualquier servidor real.
+En esta práctica vas a montar un **reverse proxy**: un único nginx que recibe todas las peticiones en el puerto 80 y las reparte entre varios servicios. Puede repartirlas de dos formas: **por ruta** (`localhost/code/`, `localhost/portainer/`…) o **por subdominio** (`code.localhost`, `kuma.localhost`…), y las dos se pueden combinar en el mismo proxy. Es lo que hay delante de casi cualquier servidor real.
 
 Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server y Portainer) y lo vas ampliando con nuevos servicios, tarea a tarea.
 
@@ -12,11 +12,13 @@ Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server
   - [Arquitectura de la práctica](#arquitectura-de-la-práctica)
   - [El `docker-compose.yml`](#el-docker-composeyml)
   - [El `nginx.conf`](#el-nginxconf)
+  - [Rutas o subdominios: dos formas de repartir](#rutas-o-subdominios-dos-formas-de-repartir)
 - [🛠️ Tareas](#️-tareas)
   - [Tarea 1 · Arranca el entorno y explóralo](#tarea-1--arranca-el-entorno-y-explóralo)
   - [Tarea 2 · Tu primer servicio: whoami](#tarea-2--tu-primer-servicio-whoami)
   - [Tarea 3 · Publica una web estática](#tarea-3--publica-una-web-estática)
   - [Tarea 4 · Adminer y una base de datos](#tarea-4--adminer-y-una-base-de-datos)
+  - [Tarea 5 · Publica por subdominio y combina las dos formas](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas)
   - [⭐ Reto · Un servicio que conoce su prefijo](#-reto--un-servicio-que-conoce-su-prefijo)
 - [🔄 Cómo aplicar los cambios](#-cómo-aplicar-los-cambios)
 - [🩺 Problemas frecuentes](#-problemas-frecuentes)
@@ -32,6 +34,7 @@ Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server
 | 2 | Publicas **whoami** en `/whoami/` (guiada) | `location`, `rewrite`, `proxy_pass` y cabeceras |
 | 3 | Publicas una **web estática** en `/mi-web/` y arreglas un fallo | Rutas absolutas y relativas detrás de un prefijo |
 | 4 | Publicas **Adminer** en `/adminer/` con una base de datos detrás | Qué servicios se publican y cuáles se quedan dentro |
+| 5 | Publicas whoami en `whoami.localhost` y **Uptime Kuma** en `kuma.localhost` | Publicar por subdominio (`server_name`) y combinarlo con las rutas |
 | ⭐ | (Opcional) Publicas **Dozzle** en `/dozzle/` | Servicios que necesitan conocer su ruta |
 
 Necesitas **Docker Desktop** (o Docker Engine con `docker compose`) y **Git**.
@@ -140,9 +143,53 @@ Pruébalo tú mismo: abre <http://localhost/portainer/api/status> y verás la re
 
 Al principio del fichero hay tres cosas que no hace falta tocar, pero conviene entender:
 
-- **Las cabeceras `proxy_set_header`** (`Host`, `X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original. Sin ellas, el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2.
+- **Las cabeceras `proxy_set_header`** (`Host`, `X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original. Sin ellas, el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2. Están **fuera** de los bloques `server` para que las hereden todos, también los de subdominio de la Tarea 5.
 - **El bloque `map … $connection_upgrade`** deja pasar los **WebSockets**, conexiones que se quedan abiertas. code-server no funciona sin ellos.
 - **`resolver 127.0.0.11`** junto con `set $destino` hacen que nginx busque cada servicio **en cada petición**, en vez de una sola vez al arrancar. Por eso el proxy arranca aunque un servicio esté parado o mal escrito: solo falla esa ruta, con un `502`.
+
+### Rutas o subdominios: dos formas de repartir
+
+Hasta ahora el proxy decide **mirando la ruta** (lo que va después del nombre). Pero también puede decidir **mirando el nombre** que has escrito en el navegador. Piensa en un edificio de oficinas con un solo portal (el puerto 80) y un recepcionista (nginx):
+
+- **Por ruta** es decirle «voy a la planta 3»: todos llegan a la misma dirección y el recepcionista te manda por el pasillo que toca.
+- **Por subdominio** es que cada empresa del edificio tenga **su propio rótulo y su propia dirección**, aunque físicamente sea el mismo portal.
+
+| | Por **ruta** | Por **subdominio** |
+|---|---|---|
+| URL | `http://localhost/code/` | `http://code.localhost/` |
+| nginx mira… | el principio de la ruta → `location /code/` | el nombre pedido (cabecera `Host`) → `server_name code.localhost` |
+| Bloque en `nginx.conf` | un `location` dentro del `server` principal | un `server { }` propio por servicio |
+| ¿Hace falta `rewrite`? | Sí, para quitar el prefijo (o configurar el servicio, como en el ⭐ Reto) | No: el servicio está en `/`, como si fuera el único |
+| Rutas absolutas (`/css/…`) | Se rompen (Tarea 3) | Funcionan |
+| Servicios que no admiten subruta (Uptime Kuma…) | No funcionan | Funcionan |
+| ¿Qué necesita el nombre? | Nada: solo hay un nombre | Que cada nombre **resuelva a la IP del proxy** (ver abajo) |
+| Cuándo encaja | Pocos servicios, sin DNS, pruebas rápidas | Lo habitual en producción: cada servicio con su nombre |
+
+**Cómo decide nginx cuando hay de las dos.** Una petición pasa por dos filtros, siempre en este orden:
+
+1. **¿Qué `server`?** nginx compara el nombre de la petición (`Host`) con los `server_name`. Si ninguno encaja, la atiende el que lleva `default_server`: en esta práctica, el servidor principal con el portal y las rutas.
+2. **¿Qué `location`?** Dentro del `server` elegido, compara la ruta con sus `location`.
+
+```text
+http://kuma.localhost/dashboard   → server kuma.localhost  → location /          → kuma:3001  recibe /dashboard
+http://localhost/code/            → server principal       → location /code/     → code:8443  recibe /
+http://localhost/kuma/            → server principal       → ningún location     → 404 del portal
+```
+
+**Combinarlas** es tan sencillo como tener los dos tipos de bloque en el mismo `nginx.conf`: el `server` principal (portal + rutas) y un `server` por cada subdominio. Un mismo servicio puede incluso publicarse de las dos formas a la vez (un `location` en el principal y su propio `server`): cada bloque es solo una puerta más hacia el mismo contenedor. Un reparto razonable:
+
+- **Por ruta:** el portal y los servicios que funcionan bien detrás de un prefijo (code-server, Portainer, Adminer…).
+- **Por subdominio:** los que no admiten subruta o tienen rutas absolutas (Uptime Kuma, muchas webs), y los que queremos que tengan una dirección «limpia» (`www`, `intranet`…).
+
+**¿Cómo llega el nombre al proxy?** Para que `code.localhost` o `intranet.innovatechsolutions.com` lleguen a tu nginx, el nombre tiene que **resolver a la IP del proxy**:
+
+| Dónde estás | Qué haces |
+|---|---|
+| En tu PC, con `*.localhost` | Nada: Chrome, Edge y Firefox resuelven cualquier `algo.localhost` a `127.0.0.1` solos |
+| Otro nombre en tu PC (o un navegador que no lo resuelva) | Una línea en el fichero `hosts` por nombre: `127.0.0.1 kuma.localhost` (Linux/macOS: `/etc/hosts`; Windows: `C:\Windows\System32\drivers\etc\hosts`) |
+| En una red con DNS (como el reto de la PYME) | Un registro `A` por subdominio en el DNS, apuntando a la IP del servidor del proxy |
+
+> Si publicas el proxy en otro puerto (`"8080:80"`), el puerto va detrás del nombre: `http://kuma.localhost:8080/`. nginx compara el nombre sin el puerto, así que el `server_name` no cambia.
 
 ---
 
@@ -382,6 +429,73 @@ volumes:
 
 ---
 
+### Tarea 5 · Publica por subdominio y combina las dos formas
+
+Hasta ahora todo cuelga de `localhost/…`. En esta tarea vas a dar a algunos servicios **su propio nombre**, sin tocar las rutas que ya funcionan. Antes de empezar, repasa [Rutas o subdominios](#rutas-o-subdominios-dos-formas-de-repartir).
+
+**1. whoami también por subdominio.** No hace falta un contenedor nuevo: es el mismo whoami de la Tarea 2. Al final de `proxy/nginx.conf`, **fuera** del `server` principal, añade un bloque `server` propio (tienes la plantilla comentada al final del fichero):
+
+```nginx
+# --- WHOAMI por subdominio: whoami.localhost → servicio "whoami", puerto 80 ---
+server {
+    listen 80;
+    server_name whoami.localhost;
+    set $prefijo "";
+
+    location / {
+        set $destino whoami:80;
+        proxy_pass http://$destino;
+    }
+}
+```
+
+Fíjate en lo que **no** está: ni `rewrite`, ni redirección de la barra final. No hay prefijo que quitar.
+
+Reinicia el proxy y abre <http://whoami.localhost/hola>. Compáralo con <http://localhost/whoami/hola>, que sigue funcionando:
+
+| | `localhost/whoami/hola` | `whoami.localhost/hola` |
+|---|---|---|
+| `Host:` | `localhost` | `whoami.localhost` |
+| Ruta que recibe | `GET /hola` (gracias al `rewrite`) | `GET /hola` (sin hacer nada) |
+| `X-Forwarded-Prefix:` | `/whoami` | vacío |
+
+El mismo contenedor, publicado de **las dos formas a la vez**.
+
+> ¿No abre `whoami.localhost`? Tu navegador no resuelve `*.localhost`: añade `127.0.0.1 whoami.localhost` a tu fichero `hosts` (ver [cómo llega el nombre al proxy](#rutas-o-subdominios-dos-formas-de-repartir)).
+
+**2. Uptime Kuma: un servicio que necesita subdominio.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) vigila si tus servicios están en marcha. No funciona en una subruta, así que es el candidato perfecto para un subdominio.
+
+```yaml
+  kuma:                         # → http://kuma.localhost/
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    volumes:
+      - kuma_datos:/app/data
+```
+
+Declara `kuma_datos:` en la sección `volumes:` y escribe **tú** su bloque `server` con `server_name kuma.localhost`. Kuma escucha en el puerto **3001** y usa WebSockets (ya están cubiertos por las cabeceras comunes). Arranca con `docker compose up -d` y reinicia el proxy.
+
+Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cada servicio. Usa sus nombres internos: `http://whoami`, `http://mi-web`, `http://portainer:9000`… Kuma está dentro de la red de Docker y los encuentra igual que el proxy.
+
+**3. Añade las cajas al portal.** Para un subdominio, `ruta` es la URL completa:
+
+```js
+  {
+    nombre: 'Uptime Kuma',
+    ruta: 'http://kuma.localhost/',
+    imagen: 'img/generica.svg',
+    descripcion: 'Estado de los servicios',
+  },
+```
+
+🧪 **Experimento 1: un nombre que no existe.** Abre <http://loquesea.localhost/>. Aparece **el portal**. Ningún `server_name` encaja, así que la petición la atiende el `default_server`, que es el servidor principal. Ahora prueba <http://kuma.localhost/code/>. **No** abre code-server: el filtro del `server` va primero, y en el de Kuma no hay ningún `location /code/`.
+
+🧪 **Experimento 2: rutas absolutas sin miedo.** Publica también `mi-web` por subdominio en `web.localhost`. Después vuelve a poner en su `index.html` la ruta absoluta que rompía la Tarea 3 (`href="/css/web.css"`). En <http://web.localhost/> se ve **con estilos**; en <http://localhost/mi-web/> vuelve a romperse. Deja la versión relativa, que funciona en los dos sitios. Fíjate también en **Volver al portal** (`href="/"`): en `web.localhost`, `/` es la raíz de la propia web, no el portal. Por eso, desde un subdominio, los enlaces a otro servicio llevan la URL completa (`http://localhost/`).
+
+> **Cuando no estás en tu PC.** En un servidor real (por ejemplo, el del reto de la PYME), cambia `.localhost` por tu dominio: `server_name intranet.innovatechsolutions.com;`. Después crea en el DNS un registro `A` por subdominio que apunte a la IP del servidor donde corre el proxy. nginx no cambia nada más.
+
+---
+
 ### ⭐ Reto · Un servicio que conoce su prefijo
 
 Hasta ahora el proxy **quitaba el prefijo** con `rewrite` y el servicio creía estar en `/`. Algunos servicios funcionan mejor (o solo funcionan) si **saben** en qué ruta están publicados. En ese caso se les configura su ruta base y el proxy pasa la petición **sin rewrite**.
@@ -396,7 +510,7 @@ Publica [Dozzle](https://dozzle.dev/), un visor de logs de contenedores, en `/do
 - Su bloque en `nginx.conf` **no** lleva `rewrite`.
 - La primera vez muestra un asistente de configuración: pulsa **Continuar sin inicio de sesión**.
 
-Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones no funcionan en una subruta (por ejemplo, Uptime Kuma) y necesitarían un subdominio propio.
+Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones no funcionan en una subruta (por ejemplo, Uptime Kuma): para esas, usa un subdominio como en la [Tarea 5](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas).
 
 ---
 
@@ -427,6 +541,9 @@ Lo primero, siempre: `docker compose ps` y `docker compose logs proxy`.
 | `Falta CODE_PASSWORD` al usar `docker compose` | No existe el fichero `.env` | `cp .env.template .env` |
 | `bind: address already in use` al arrancar | Otro programa usa el puerto 80 | Cambia `"80:80"` por `"8080:80"` y entra en `http://localhost:8080/` |
 | He cambiado `nginx.conf` y no pasa nada | El proxy no se ha reiniciado | `docker compose restart proxy` |
+| `algo.localhost` **no abre** (el navegador dice que no encuentra el sitio) | El nombre no resuelve a `127.0.0.1` | Añade `127.0.0.1 algo.localhost` al fichero `hosts` o prueba con Chrome/Firefox |
+| `algo.localhost` muestra **el portal** en vez del servicio | Ningún `server_name` coincide (errata, o falta el bloque) y responde el `default_server` | Revisa el `server_name` y reinicia el proxy |
+| Un servicio por subdominio falla con WebSockets o pierde la IP del cliente | Has puesto un `proxy_set_header` dentro de su `server` y ya no hereda las comunes | Quítalo, o copia dentro también las demás cabeceras |
 
 ---
 
@@ -442,6 +559,7 @@ Así debería quedar tu portal (aquí con el reto incluido):
 - [ ] `/whoami/`, `/mi-web/` y `/adminer/` funcionan y tienen su caja en el portal.
 - [ ] `/mi-web/` se ve con estilos y con tu nombre.
 - [ ] Adminer conecta con la base de datos `db`.
+- [ ] `whoami` funciona en `localhost/whoami/` **y** en `whoami.localhost`, y Uptime Kuma en `kuma.localhost` con su caja en el portal.
 - [ ] `.env.template` incluye `DB_PASSWORD` y el `.env` **no** está en el repositorio.
 - [ ] Has creado `RESPUESTAS.md` con las respuestas a estas preguntas (2-3 líneas cada una):
   1. ¿Por qué solo el servicio `proxy` tiene `ports`? ¿Qué se gana con ello?
@@ -449,6 +567,8 @@ Así debería quedar tu portal (aquí con el reto incluido):
   3. ¿Por qué tu web salía sin estilos y cómo lo arreglaste?
   4. ¿Por qué la base de datos no tiene un `location` en el proxy?
   5. ¿Qué pasa al entrar en la ruta de un servicio parado? ¿Y en las demás rutas? ¿Por qué?
+  6. ¿Qué diferencia hay entre publicar por ruta y por subdominio? ¿Por qué Uptime Kuma necesita subdominio y code-server no?
+  7. ¿Por qué `loquesea.localhost` muestra el portal y `kuma.localhost/code/` no abre code-server?
 
 Sube tus cambios:
 
