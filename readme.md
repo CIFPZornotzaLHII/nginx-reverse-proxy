@@ -39,6 +39,8 @@ Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server
 
 Necesitas **Docker Desktop** (o Docker Engine con `docker compose`) y **Git**.
 
+Todos los comandos de esta práctica se ejecutan en una **terminal abierta en la carpeta del proyecto** (la que contiene `docker-compose.yml`). En Windows usa PowerShell o Git Bash, no CMD.
+
 ---
 
 ## 🧠 Conceptos
@@ -58,6 +60,8 @@ Ventajas:
 ### Arquitectura de la práctica
 
 ![Arquitectura: el proxy reparte /, /code/ y /portainer/; tú añades whoami, mi-web y adminer](docs/img/arquitectura.svg)
+
+En la Tarea 5 añadirás además dos **nombres** (`whoami.localhost` y `kuma.localhost`) que entran por el mismo puerto 80 y el mismo proxy; el diagrama muestra solo la parte por ruta.
 
 ```text
 nginx-reverse-proxy/
@@ -127,6 +131,17 @@ location /portainer/ {
 | `rewrite ^/portainer(/.*)$ $1 break;` | **Quita el prefijo:** `/portainer/api/status` pasa a ser `/api/status` |
 | `proxy_pass http://$destino;` | Reenvía la petición al servicio y devuelve su respuesta al navegador |
 
+La línea del `rewrite` es la más rara. Pieza a pieza:
+
+| Trozo | Significa |
+|---|---|
+| `^/portainer` | la ruta **empieza por** `/portainer` |
+| `(/.*)` | y después viene cualquier cosa (la barra y lo que siga): **guárdalo** |
+| `$1` | la ruta nueva es **lo guardado**, sin el prefijo |
+| `break` | ya está: no mires más reglas y sigue con el `proxy_pass` |
+
+Cuando copies este bloque para otro servicio, el prefijo aparece **cinco veces** y el nombre del servicio una (en `$destino`): cámbialos todos.
+
 Así viaja una petición:
 
 ![Recorrido de una petición: location, rewrite y proxy_pass](docs/img/recorrido-peticion.svg)
@@ -143,11 +158,13 @@ Pruébalo tú mismo: abre <http://localhost/portainer/api/status> y verás la re
 
 Al principio del fichero hay tres cosas que no hace falta tocar, pero conviene entender:
 
-- **Las cabeceras `proxy_set_header`** (`Host`, `X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original. Sin ellas, el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2. Están **fuera** de los bloques `server` para que las hereden todos, también los de subdominio de la Tarea 5.
+- **Las cabeceras `proxy_set_header`.** Una *cabecera* es un dato extra que viaja con cada petición HTTP, además de la URL: para qué nombre va (`Host`), desde qué navegador, desde qué IP… Las que añade el proxy (`X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original. Sin ellas, el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2. Están **fuera** de los bloques `server` para que las hereden todos, también los de subdominio de la Tarea 5.
 - **El bloque `map … $connection_upgrade`** deja pasar los **WebSockets**, conexiones que se quedan abiertas. code-server no funciona sin ellos.
 - **`resolver 127.0.0.11`** junto con `set $destino` hacen que nginx busque cada servicio **en cada petición**, en vez de una sola vez al arrancar. Por eso el proxy arranca aunque un servicio esté parado o mal escrito: solo falla esa ruta, con un `502`.
 
 ### Rutas o subdominios: dos formas de repartir
+
+> 📌 Esta sección la necesitas en la **Tarea 5**. Si es tu primera lectura, puedes saltar a las [Tareas](#️-tareas) y volver aquí cuando llegues.
 
 Hasta ahora el proxy decide **mirando la ruta** (lo que va después del nombre). Pero también puede decidir **mirando el nombre** que has escrito en el navegador. Piensa en un edificio de oficinas con un solo portal (el puerto 80) y un recepcionista (nginx):
 
@@ -181,13 +198,13 @@ http://localhost/kuma/            → server principal       → ningún locatio
 - **Por ruta:** el portal y los servicios que funcionan bien detrás de un prefijo (code-server, Portainer, Adminer…).
 - **Por subdominio:** los que no admiten subruta o tienen rutas absolutas (Uptime Kuma, muchas webs), y los que queremos que tengan una dirección «limpia» (`www`, `intranet`…).
 
-**¿Cómo llega el nombre al proxy?** Para que `code.localhost` o `intranet.innovatechsolutions.com` lleguen a tu nginx, el nombre tiene que **resolver a la IP del proxy**:
+**¿Cómo llega el nombre al proxy?** Para que `code.localhost` o `intranet.miempresa.com` lleguen a tu nginx, el nombre tiene que **resolver a la IP del proxy**:
 
 | Dónde estás | Qué haces |
 |---|---|
 | En tu PC, con `*.localhost` | Nada: Chrome, Edge y Firefox resuelven cualquier `algo.localhost` a `127.0.0.1` solos |
-| Otro nombre en tu PC (o un navegador que no lo resuelva) | Una línea en el fichero `hosts` por nombre: `127.0.0.1 kuma.localhost` (Linux/macOS: `/etc/hosts`; Windows: `C:\Windows\System32\drivers\etc\hosts`) |
-| En una red con DNS (como el reto de la PYME) | Un registro `A` por subdominio en el DNS, apuntando a la IP del servidor del proxy |
+| Otro nombre en tu PC (o un navegador que no lo resuelva) | Una línea en el fichero `hosts` por nombre: `127.0.0.1 kuma.localhost` (Linux/macOS: `/etc/hosts`; Windows: `C:\Windows\System32\drivers\etc\hosts`). Editarlo requiere permisos de administrador |
+| En una red con DNS (un servidor real con dominio propio) | Un registro `A` por subdominio en el DNS, apuntando a la IP del servidor del proxy |
 
 > Si publicas el proxy en otro puerto (`"8080:80"`), el puerto va detrás del nombre: `http://kuma.localhost:8080/`. nginx compara el nombre sin el puerto, así que el `server_name` no cambia.
 
@@ -197,20 +214,24 @@ http://localhost/kuma/            → server principal       → ningún locatio
 
 ### Tarea 1 · Arranca el entorno y explóralo
 
-**1. Clona tu repositorio y crea el `.env`** con la contraseña de code-server:
+**1. Clona tu repositorio y crea el `.env`:**
 
 ```bash
-git clone <url-de-tu-repositorio>
-cd nginx-reverse-proxy
-cp .env.template .env        # después edita .env y cambia la contraseña
+git clone <url-de-tu-repositorio>   # la URL del botón "Code" de tu repositorio en GitHub
+cd nginx-reverse-proxy              # o el nombre que tenga la carpeta que se ha creado
+cp .env.template .env
 ```
 
-**2. Arranca todo** y comprueba el estado:
+Abre `.env` y cambia `cambiame` por una contraseña tuya: es la de code-server. Docker Compose lee este fichero solo, y `docker-compose.yml` usa el valor con `${CODE_PASSWORD:?mensaje}`: coge la variable del `.env` y, si no existe, se para y muestra el mensaje. El `.env` está en `.gitignore`, así que nunca se sube a GitHub.
+
+**2. Arranca todo** y comprueba el estado. La primera vez descarga las imágenes y tarda unos minutos:
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
+
+Salida resumida (la tuya tendrá más columnas):
 
 ```text
 SERVICE     STATUS         PORTS
@@ -225,11 +246,11 @@ Solo `proxy` tiene un puerto publicado (`0.0.0.0:80->80`). Los demás muestran s
 
 ![Portal de inicio con Code Server y Portainer](docs/img/portal-inicial.png)
 
-**4. Entra en Code Server** (`/code/`) con la contraseña del `.env`. Es VS Code en el navegador, abierto sobre la carpeta del proyecto: puedes editar los ficheros de la práctica desde aquí. Si te pregunta si confías en la carpeta, pulsa **Trust**.
+**4. Entra en Code Server** (`/code/`) con la contraseña del `.env`. Es VS Code en el navegador, abierto sobre la carpeta del proyecto. Puedes editar los ficheros de la práctica desde aquí o desde el VS Code de tu PC: es la misma carpeta, elige lo que prefieras. Si te pregunta si confías en la carpeta, pulsa **Trust**.
 
 ![code-server con nginx.conf abierto, a través de /code/](docs/img/code-server.png)
 
-**5. Entra en Portainer** (`/portainer/`) y crea el usuario administrador:
+**5. Entra en Portainer** (`/portainer/`) y crea el usuario administrador. ⏱️ **Hazlo nada más arrancar:** Portainer solo da **5 minutos** para crear el usuario. Si se pasan, al entrar en `/portainer/` verás un `404` en `/timeout.html`; ejecuta `docker compose restart portainer` y vuelve a intentarlo (el token cambia en cada arranque).
 
 - La contraseña debe tener **al menos 12 caracteres**.
 - Te pide un **setup token**, que Portainer escribe en sus logs al arrancar:
@@ -244,8 +265,6 @@ Solo `proxy` tiene un puerto publicado (`0.0.0.0:80->80`). Los demás muestran s
   ```
 
 ![Pantalla de alta de Portainer con el campo Setup token](docs/img/portainer-setup.png)
-
-> ⏱️ Tienes **5 minutos** desde que arranca Portainer para crear el usuario. Si se pasa el tiempo, al entrar en `/portainer/` acabarás en un `404` en `/timeout.html`. Ejecuta `docker compose restart portainer` y vuelve a intentarlo (el token cambia en cada arranque).
 
 **6. Personaliza el portal.** Edita `proxy/web/apps.js` y cambia el título y el pie (pon tu nombre):
 
@@ -267,7 +286,7 @@ Guarda y recarga el navegador (F5). No hace falta reiniciar nada: `proxy/web/` e
 
 [whoami](https://github.com/traefik/whoami) es un servidor web diminuto que responde con **la petición que le ha llegado**. Es perfecto para ver qué hace el proxy con cada petición.
 
-**1. Añade el servicio** al final de `services:` en `docker-compose.yml`, sin `ports`:
+**1. Añade el servicio** en `docker-compose.yml`, sin `ports`. Va al final de la sección `services:`, es decir, **después de `portainer:` y antes de la línea `volumes:`** (hay un comentario que marca el sitio), con la misma sangría de dos espacios que los demás:
 
 ```yaml
   whoami:                       # → /whoami/
@@ -275,11 +294,24 @@ Guarda y recarga el navegador (F5). No hace falta reiniciar nada: `proxy/web/` e
     restart: unless-stopped
 ```
 
+El fichero tiene que quedar así por dentro:
+
+```yaml
+services:
+  proxy: …
+  code: …
+  portainer: …
+  whoami: …          # ← el nuevo, dentro de services
+
+volumes:
+  …
+```
+
 ```bash
 docker compose up -d
 ```
 
-**2. Añade su bloque** en `proxy/nginx.conf`, dentro de `server { … }`, después del de Portainer. whoami escucha en el puerto **80**:
+**2. Añade su bloque** en `proxy/nginx.conf`, dentro del `server` principal: después del bloque de Portainer y **antes de la `}` que cierra el `server`** (también hay un comentario que marca el sitio). whoami escucha en el puerto **80**:
 
 ```nginx
     # --- WHOAMI: /whoami/ → servicio "whoami", puerto 80 ---
@@ -299,7 +331,9 @@ docker compose restart proxy
 docker compose logs proxy
 ```
 
-**4. Prueba** <http://localhost/whoami/hola>:
+Verás varias líneas de arranque (`docker-entrypoint.sh`, `Configuration complete`…): son normales. Si no aparece ninguna con `[emerg]`, está bien.
+
+**4. Prueba** <http://localhost/whoami/hola>. Verás algo así (tus IPs serán otras):
 
 ```text
 Hostname: 5d30021cbe95
@@ -309,13 +343,13 @@ RemoteAddr: 172.22.0.4:49914          ← quién le habla: el PROXY
 GET /hola HTTP/1.1                    ← la ruta que le llega: SIN /whoami
 Host: localhost
 User-Agent: Mozilla/5.0 (...)
-X-Forwarded-For: 172.22.0.1           ← quién hizo la petición original: TU navegador
+X-Forwarded-For: 172.22.0.1           ← quién hizo la petición original: tu PC (la IP con la que Docker lo ve)
 X-Forwarded-Prefix: /whoami           ← bajo qué ruta está publicado
 X-Forwarded-Proto: http
 X-Real-Ip: 172.22.0.1
 ```
 
-**5. Añádelo al portal** en `proxy/web/apps.js`, dentro de `APPS`:
+**5. Añádelo al portal** en `proxy/web/apps.js`, dentro de la lista `APPS`: después de la caja de Portainer y **antes del `];` que cierra la lista** (hay un comentario que marca el sitio):
 
 ```js
   {
@@ -337,6 +371,8 @@ docker compose logs proxy --tail 3
 
 Verás `502 Bad Gateway` en el navegador y `whoami could not be resolved` en el log. El portal y el resto de rutas siguen funcionando. Arráncalo de nuevo con `docker compose start whoami`.
 
+✅ **Comprueba:** <http://localhost/whoami/hola> muestra `GET /hola`, la caja de Whoami está en el portal y, con whoami parado, `/whoami/` da `502` mientras el portal sigue funcionando.
+
 ---
 
 ### Tarea 3 · Publica una web estática
@@ -353,7 +389,7 @@ En `servicios/mi-web/` tienes una web sencilla. La va a servir **su propio conte
       - ./servicios/mi-web:/usr/share/nginx/html:ro
 ```
 
-**2. Escribe tú el bloque** en `nginx.conf`, siguiendo el de whoami. Datos: ruta `/mi-web/`, servicio `mi-web`, puerto `80`. Reinicia el proxy.
+**2. Escribe tú el bloque** en `nginx.conf`, en el mismo sitio que el de whoami. Datos: ruta `/mi-web/`, servicio `mi-web`, puerto `80`. Copia el bloque de whoami y cambia `whoami` por `mi-web` en **las seis veces** que aparece (sin contar el comentario); el guion no da problemas en nginx. Reinicia el proxy.
 
 **3. Abre <http://localhost/mi-web/>.** Algo falla: la página sale **sin estilos**.
 
@@ -378,18 +414,22 @@ La ruta empieza por `/`, así que es **absoluta**: el navegador la busca en la r
 
 **6. Añádela al portal** en `apps.js`.
 
+✅ **Comprueba:** <http://localhost/mi-web/> se ve con estilos y con tu nombre, en **F12 → Red** `web.css` da `200`, y la caja está en el portal.
+
 ---
 
 ### Tarea 4 · Adminer y una base de datos
 
 [Adminer](https://www.adminer.org/) es un gestor de bases de datos web. Vas a publicarlo en `/adminer/` con una base de datos MariaDB detrás. **La base de datos no se publica:** solo Adminer habla con ella, dentro de la red de Docker.
 
-**1. Añade la contraseña de la base de datos** al `.env` (y también a `.env.template`, para que quien clone tu repositorio sepa que hace falta):
+**1. Añade la contraseña de la base de datos** al `.env` y también a `.env.template`, para que quien clone tu repositorio sepa que hace falta. En `.env` pon una contraseña tuya; en `.env.template` deja `cambiame`:
 
 ```bash
 # Contraseña del usuario root de MariaDB
 DB_PASSWORD=cambiame
 ```
+
+> MariaDB fija la contraseña **la primera vez que arranca**. Si la cambias en `.env` después, la base de datos sigue con la antigua (ver [Problemas frecuentes](#-problemas-frecuentes)).
 
 **2. Añade los dos servicios:**
 
@@ -410,6 +450,8 @@ DB_PASSWORD=cambiame
       ADMINER_DEFAULT_SERVER: db
 ```
 
+La línea `${DB_PASSWORD:?Falta DB_PASSWORD en .env}` es la misma sintaxis que ya usa `CODE_PASSWORD`: lee la variable del `.env` y, si no existe, `docker compose` se para con ese mensaje. Cópiala tal cual.
+
 Y declara el volumen al final del fichero, en la sección `volumes:`:
 
 ```yaml
@@ -423,9 +465,13 @@ volumes:
 
 **4. Entra en <http://localhost/adminer/>** con servidor `db`, usuario `root`, la contraseña del `.env` y base de datos `clase`. Fíjate en que el servidor es `db`: otra vez, el nombre del servicio.
 
+> MariaDB tarda unos 10-20 segundos en prepararse la primera vez. Si Adminer dice que no puede conectar, no toques nada: espera y vuelve a intentarlo. `docker compose logs db` termina en `ready for connections` cuando está lista.
+
 ![Login de Adminer con el servidor db](docs/img/adminer-login.png)
 
 **5. Añádelo al portal.**
+
+✅ **Comprueba:** entras en Adminer y ves la base de datos `clase` (vacía), la caja está en el portal, y <http://localhost:8080> **no** responde: Adminer, como la base de datos, solo se alcanza desde dentro de la red de Docker.
 
 ---
 
@@ -449,7 +495,7 @@ server {
 }
 ```
 
-Fíjate en lo que **no** está: ni `rewrite`, ni redirección de la barra final. No hay prefijo que quitar.
+Fíjate en lo que **no** está: ni `rewrite`, ni redirección de la barra final. No hay prefijo que quitar. La línea `set $prefijo "";` hace falta porque la cabecera común `X-Forwarded-Prefix` usa esa variable y nginx se queja si no está definida; al estar vacía, la cabecera no se envía.
 
 Reinicia el proxy y abre <http://whoami.localhost/hola>. Compáralo con <http://localhost/whoami/hola>, que sigue funcionando:
 
@@ -457,11 +503,11 @@ Reinicia el proxy y abre <http://whoami.localhost/hola>. Compáralo con <http://
 |---|---|---|
 | `Host:` | `localhost` | `whoami.localhost` |
 | Ruta que recibe | `GET /hola` (gracias al `rewrite`) | `GET /hola` (sin hacer nada) |
-| `X-Forwarded-Prefix:` | `/whoami` | vacío |
+| `X-Forwarded-Prefix:` | `/whoami` | no aparece (está vacía y nginx no la envía) |
 
 El mismo contenedor, publicado de **las dos formas a la vez**.
 
-> ¿No abre `whoami.localhost`? Tu navegador no resuelve `*.localhost`: añade `127.0.0.1 whoami.localhost` a tu fichero `hosts` (ver [cómo llega el nombre al proxy](#rutas-o-subdominios-dos-formas-de-repartir)).
+> ¿No abre `whoami.localhost`? Tu navegador no resuelve `*.localhost`. Prueba primero con Chrome, Edge o Firefox, que lo resuelven solos. Si no, añade `127.0.0.1 whoami.localhost` a tu fichero `hosts` (hace falta permiso de administrador; ver [cómo llega el nombre al proxy](#rutas-o-subdominios-dos-formas-de-repartir)).
 
 **2. Uptime Kuma: un servicio que necesita subdominio.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) vigila si tus servicios están en marcha. No funciona en una subruta, así que es el candidato perfecto para un subdominio.
 
@@ -477,7 +523,7 @@ Declara `kuma_datos:` en la sección `volumes:` y escribe **tú** su bloque `ser
 
 Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cada servicio. Usa sus nombres internos: `http://whoami`, `http://mi-web`, `http://portainer:9000`… Kuma está dentro de la red de Docker y los encuentra igual que el proxy.
 
-**3. Añade las cajas al portal.** Para un subdominio, `ruta` es la URL completa:
+**3. Añade la caja de Uptime Kuma al portal.** Para un subdominio, `ruta` es la URL completa (si publicaste el proxy en otro puerto, inclúyelo: `http://kuma.localhost:8080/`). whoami ya tiene su caja; si quieres, añade otra que apunte a `http://whoami.localhost/`:
 
 ```js
   {
@@ -488,11 +534,15 @@ Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cad
   },
 ```
 
-🧪 **Experimento 1: un nombre que no existe.** Abre <http://loquesea.localhost/>. Aparece **el portal**. Ningún `server_name` encaja, así que la petición la atiende el `default_server`, que es el servidor principal. Ahora prueba <http://kuma.localhost/code/>. **No** abre code-server: el filtro del `server` va primero, y en el de Kuma no hay ningún `location /code/`.
+🧪 **Experimento 1: un nombre que no existe.** Abre <http://loquesea.localhost/>. Aparece **el portal**. Ningún `server_name` encaja, así que la petición la atiende el `default_server`, que es el servidor principal. Ahora prueba <http://kuma.localhost/code/>. **No** abre code-server, verás la propia página de Kuma (o un «not found» suyo): el filtro del `server` va primero, y en el de Kuma no hay ningún `location /code/`.
 
-🧪 **Experimento 2: rutas absolutas sin miedo.** Publica también `mi-web` por subdominio en `web.localhost`. Después vuelve a poner en su `index.html` la ruta absoluta que rompía la Tarea 3 (`href="/css/web.css"`). En <http://web.localhost/> se ve **con estilos**; en <http://localhost/mi-web/> vuelve a romperse. Deja la versión relativa, que funciona en los dos sitios. Fíjate también en **Volver al portal** (`href="/"`): en `web.localhost`, `/` es la raíz de la propia web, no el portal. Por eso, desde un subdominio, los enlaces a otro servicio llevan la URL completa (`http://localhost/`).
+🧪 **Experimento 2: rutas absolutas sin miedo.** Publica también `mi-web` por subdominio en `web.localhost`. Después vuelve a poner en su `index.html` la ruta absoluta que rompía la Tarea 3 (`href="/css/web.css"`). En <http://web.localhost/> se ve **con estilos**; en <http://localhost/mi-web/> vuelve a romperse. Deja la versión relativa, que funciona en los dos sitios. Fíjate también en **Volver al portal** (`href="/"`): en `web.localhost`, `/` es la raíz de la propia web, no el portal. Por eso, desde un subdominio, los enlaces a otro servicio llevan la URL completa (`http://localhost/`). El bloque `server` de `web.localhost` puedes dejarlo o quitarlo: para la entrega no hace falta.
 
-> **Cuando no estás en tu PC.** En un servidor real (por ejemplo, el del reto de la PYME), cambia `.localhost` por tu dominio: `server_name intranet.innovatechsolutions.com;`. Después crea en el DNS un registro `A` por subdominio que apunte a la IP del servidor donde corre el proxy. nginx no cambia nada más.
+🧪 **Experimento 3 (opcional): Kuma en una subruta.** ¿Por qué decimos que Kuma no funciona detrás de un prefijo? Compruébalo: añade en el `server` principal un bloque `location /kuma/` igual que el de whoami (con su `rewrite`), apuntando a `kuma:3001`, y reinicia el proxy. Abre <http://localhost/kuma/>: la página sale en blanco o acabas en un `404` del portal. En **F12 → Red** verás que pide sus archivos en la raíz (`/assets/…`) y dan `404`: es el mismo problema de rutas absolutas de la Tarea 3, pero esta vez no puedes arreglar el HTML porque no es tuyo. Quita el bloque y reinicia el proxy.
+
+✅ **Comprueba:** <http://whoami.localhost/hola> responde y <http://localhost/whoami/hola> sigue funcionando, <http://kuma.localhost/> abre Uptime Kuma con tus monitores en verde y su caja está en el portal, y <http://loquesea.localhost/> muestra el portal.
+
+> **Cuando no estás en tu PC.** En un servidor real con dominio propio, cambia `.localhost` por tu dominio: `server_name intranet.miempresa.com;`. Después crea en el DNS un registro `A` por subdominio que apunte a la IP del servidor donde corre el proxy. nginx no cambia nada más.
 
 ---
 
@@ -505,12 +555,14 @@ Hasta ahora el proxy **quitaba el prefijo** con `rewrite` y el servicio creía e
 Publica [Dozzle](https://dozzle.dev/), un visor de logs de contenedores, en `/dozzle/`. Pistas:
 
 - Imagen `amir20/dozzle:latest`, puerto **8080**.
-- Necesita leer el socket de Docker: `/var/run/docker.sock:/var/run/docker.sock:ro`.
+- Necesita leer el **socket de Docker**, la «puerta» por la que un contenedor habla con Docker (Portainer ya la usa en el `docker-compose.yml`): `/var/run/docker.sock:/var/run/docker.sock:ro`.
 - Su ruta base se configura con la variable de entorno `DOZZLE_BASE=/dozzle`.
 - Su bloque en `nginx.conf` **no** lleva `rewrite`.
 - La primera vez muestra un asistente de configuración: pulsa **Continuar sin inicio de sesión**.
 
 Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones no funcionan en una subruta (por ejemplo, Uptime Kuma): para esas, usa un subdominio como en la [Tarea 5](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas).
+
+✅ **Comprueba:** <http://localhost/dozzle/> muestra los logs de tus contenedores y tiene su caja en el portal.
 
 ---
 
@@ -521,8 +573,17 @@ Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o 
 | Algo en `proxy/web/` o en `servicios/mi-web/` | Recarga el navegador (F5) |
 | `proxy/nginx.conf` | `docker compose restart proxy` |
 | `docker-compose.yml` o `.env` | `docker compose up -d` |
+| Has añadido un servicio nuevo (compose **y** nginx.conf) | Las dos cosas: `docker compose up -d` y `docker compose restart proxy` |
 
 > También puedes reiniciar el proxy desde Portainer: **Containers → proxy → Restart**.
+
+Y para parar y arrancar:
+
+| Quieres… | Haz… |
+|---|---|
+| Parar todo (fin de la clase) | `docker compose down`. Borra los contenedores, pero **no** los datos de los volúmenes: el usuario de Portainer, la base de datos y los monitores de Kuma se conservan |
+| Seguir otro día | `docker compose up -d` desde la carpeta del proyecto. Todo vuelve como lo dejaste |
+| Empezar de cero | `docker compose down -v`. Borra también los volúmenes: tendrás que volver a crear el usuario de Portainer, la base de datos y los monitores |
 
 ---
 
@@ -539,9 +600,13 @@ Lo primero, siempre: `docker compose ps` y `docker compose logs proxy`.
 | No carga **nada** (ni el portal) y el proxy aparece como `Restarting` | Error de sintaxis en `nginx.conf` | `docker compose logs proxy` muestra la línea: `[emerg] unexpected "}" in /etc/nginx/conf.d/default.conf:57` |
 | `/portainer/` da `404` en `/timeout.html` | Pasaron 5 minutos sin crear el usuario admin | `docker compose restart portainer` y créalo enseguida |
 | `Falta CODE_PASSWORD` al usar `docker compose` | No existe el fichero `.env` | `cp .env.template .env` |
+| `yaml: line 23: did not find expected key` o `mapping values are not allowed` al hacer `docker compose up` | Has pegado un servicio en el sitio equivocado o con otra sangría | Los servicios van dentro de `services:`, antes de `volumes:`, con **dos espacios** de sangría. Compáralo con el bloque de `whoami` |
+| `service "db" refers to undefined volume db_datos` | Falta declarar el volumen | Añádelo en la sección `volumes:` del final del fichero |
+| Adminer **no puede conectar** justo después de arrancar | MariaDB todavía está inicializando | Espera unos segundos y reintenta. `docker compose logs db` termina en `ready for connections` cuando está lista |
+| Adminer: `Access denied for user 'root'` | La contraseña de MariaDB se fija **la primera vez** que arranca; cambiarla en `.env` después no sirve | Pon en `.env` la contraseña que usaste la primera vez. Si no la recuerdas: `docker compose down -v` y `docker compose up -d` (se borran todos los datos, también el usuario de Portainer) |
 | `bind: address already in use` al arrancar | Otro programa usa el puerto 80 | Cambia `"80:80"` por `"8080:80"` y entra en `http://localhost:8080/` |
 | He cambiado `nginx.conf` y no pasa nada | El proxy no se ha reiniciado | `docker compose restart proxy` |
-| `algo.localhost` **no abre** (el navegador dice que no encuentra el sitio) | El nombre no resuelve a `127.0.0.1` | Añade `127.0.0.1 algo.localhost` al fichero `hosts` o prueba con Chrome/Firefox |
+| `algo.localhost` **no abre** (el navegador dice que no encuentra el sitio) | El nombre no resuelve a `127.0.0.1` | Prueba con Chrome, Edge o Firefox, que lo resuelven solos. Si no, añade `127.0.0.1 algo.localhost` al fichero `hosts` (necesita permisos de administrador) |
 | `algo.localhost` muestra **el portal** en vez del servicio | Ningún `server_name` coincide (errata, o falta el bloque) y responde el `default_server` | Revisa el `server_name` y reinicia el proxy |
 | Un servicio por subdominio falla con WebSockets o pierde la IP del cliente | Has puesto un `proxy_set_header` dentro de su `server` y ya no hereda las comunes | Quítalo, o copia dentro también las demás cabeceras |
 
@@ -549,7 +614,7 @@ Lo primero, siempre: `docker compose ps` y `docker compose logs proxy`.
 
 ## 📤 Entrega
 
-Así debería quedar tu portal (aquí con el reto incluido):
+Así debería quedar tu portal (la caja de Dozzle solo si haces el ⭐ Reto):
 
 ![Portal final con todos los servicios](docs/img/portal-final.png)
 
@@ -561,7 +626,7 @@ Así debería quedar tu portal (aquí con el reto incluido):
 - [ ] Adminer conecta con la base de datos `db`.
 - [ ] `whoami` funciona en `localhost/whoami/` **y** en `whoami.localhost`, y Uptime Kuma en `kuma.localhost` con su caja en el portal.
 - [ ] `.env.template` incluye `DB_PASSWORD` y el `.env` **no** está en el repositorio.
-- [ ] Has creado `RESPUESTAS.md` con las respuestas a estas preguntas (2-3 líneas cada una):
+- [ ] Has creado `RESPUESTAS.md` en la raíz del repositorio (junto a este README) con las respuestas a estas preguntas (2-3 líneas cada una):
   1. ¿Por qué solo el servicio `proxy` tiene `ports`? ¿Qué se gana con ello?
   2. ¿Qué ruta recibe whoami con `rewrite` y sin él? ¿Para qué sirve el `rewrite`?
   3. ¿Por qué tu web salía sin estilos y cómo lo arreglaste?

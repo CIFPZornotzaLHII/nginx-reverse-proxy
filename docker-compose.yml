@@ -37,6 +37,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
 
+  # ↓ Añade aquí los servicios nuevos (Tarea 2 en adelante): dentro de services, antes de volumes.
+
 volumes:
   code_config:
   portainer_data:
