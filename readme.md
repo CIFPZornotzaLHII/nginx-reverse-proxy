@@ -20,6 +20,7 @@ Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server
   - [Tarea 4 · Adminer y una base de datos](#tarea-4--adminer-y-una-base-de-datos)
   - [Tarea 5 · Publica por subdominio y combina las dos formas](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas)
   - [⭐ Reto · Un servicio que conoce su prefijo](#-reto--un-servicio-que-conoce-su-prefijo)
+- [🏁 Hacia el reto: la arquitectura final](#-hacia-el-reto-la-arquitectura-final)
 - [🔄 Cómo aplicar los cambios](#-cómo-aplicar-los-cambios)
 - [🩺 Problemas frecuentes](#-problemas-frecuentes)
 - [📤 Entrega](#-entrega)
@@ -360,18 +361,7 @@ X-Real-Ip: 172.22.0.1
   },
 ```
 
-🧪 **Experimento 1: sin `rewrite`.** Comenta la línea del `rewrite` poniendo `#` delante, reinicia el proxy y vuelve a abrir `/whoami/hola`. Ahora whoami recibe `GET /whoami/hola`: el prefijo llega entero. Vuelve a dejar la línea como estaba.
-
-🧪 **Experimento 2: servicio caído.** Para whoami y entra en `/whoami/`:
-
-```bash
-docker compose stop whoami
-docker compose logs proxy --tail 3
-```
-
-Verás `502 Bad Gateway` en el navegador y `whoami could not be resolved` en el log. El portal y el resto de rutas siguen funcionando. Arráncalo de nuevo con `docker compose start whoami`.
-
-✅ **Comprueba:** <http://localhost/whoami/hola> muestra `GET /hola`, la caja de Whoami está en el portal y, con whoami parado, `/whoami/` da `502` mientras el portal sigue funcionando.
+✅ **Comprueba:** <http://localhost/whoami/hola> muestra `GET /hola` y la caja de Whoami está en el portal.
 
 ---
 
@@ -534,13 +524,7 @@ Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cad
   },
 ```
 
-🧪 **Experimento 1: un nombre que no existe.** Abre <http://loquesea.localhost/>. Aparece **el portal**. Ningún `server_name` encaja, así que la petición la atiende el `default_server`, que es el servidor principal. Ahora prueba <http://kuma.localhost/code/>. **No** abre code-server, verás la propia página de Kuma (o un «not found» suyo): el filtro del `server` va primero, y en el de Kuma no hay ningún `location /code/`.
-
-🧪 **Experimento 2: rutas absolutas sin miedo.** Publica también `mi-web` por subdominio en `web.localhost`. Después vuelve a poner en su `index.html` la ruta absoluta que rompía la Tarea 3 (`href="/css/web.css"`). En <http://web.localhost/> se ve **con estilos**; en <http://localhost/mi-web/> vuelve a romperse. Deja la versión relativa, que funciona en los dos sitios. Fíjate también en **Volver al portal** (`href="/"`): en `web.localhost`, `/` es la raíz de la propia web, no el portal. Por eso, desde un subdominio, los enlaces a otro servicio llevan la URL completa (`http://localhost/`). El bloque `server` de `web.localhost` puedes dejarlo o quitarlo: para la entrega no hace falta.
-
-🧪 **Experimento 3 (opcional): Kuma en una subruta.** ¿Por qué decimos que Kuma no funciona detrás de un prefijo? Compruébalo: añade en el `server` principal un bloque `location /kuma/` igual que el de whoami (con su `rewrite`), apuntando a `kuma:3001`, y reinicia el proxy. Abre <http://localhost/kuma/>: la página sale en blanco o acabas en un `404` del portal. En **F12 → Red** verás que pide sus archivos en la raíz (`/assets/…`) y dan `404`: es el mismo problema de rutas absolutas de la Tarea 3, pero esta vez no puedes arreglar el HTML porque no es tuyo. Quita el bloque y reinicia el proxy.
-
-✅ **Comprueba:** <http://whoami.localhost/hola> responde y <http://localhost/whoami/hola> sigue funcionando, <http://kuma.localhost/> abre Uptime Kuma con tus monitores en verde y su caja está en el portal, y <http://loquesea.localhost/> muestra el portal.
+✅ **Comprueba:** <http://whoami.localhost/hola> responde y <http://localhost/whoami/hola> sigue funcionando, y <http://kuma.localhost/> abre Uptime Kuma con tus monitores en verde y su caja está en el portal.
 
 > **Cuando no estás en tu PC.** En un servidor real con dominio propio, cambia `.localhost` por tu dominio: `server_name intranet.miempresa.com;`. Después crea en el DNS un registro `A` por subdominio que apunte a la IP del servidor donde corre el proxy. nginx no cambia nada más.
 
@@ -563,6 +547,29 @@ Publica [Dozzle](https://dozzle.dev/), un visor de logs de contenedores, en `/do
 Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones no funcionan en una subruta (por ejemplo, Uptime Kuma): para esas, usa un subdominio como en la [Tarea 5](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas).
 
 ✅ **Comprueba:** <http://localhost/dozzle/> muestra los logs de tus contenedores y tiene su caja en el portal.
+
+---
+
+## 🏁 Hacia el reto: la arquitectura final
+
+En el reto **PYME digital** montarás lo mismo para InnovaTech Solutions, pero publicando **por subdominio**: cada servicio con su propio nombre, como en la Tarea 5. Este es el esquema que tiene que tener tu servidor:
+
+![Arquitectura final del reto: un server para la intranet y uno por cada subdominio](docs/img/arquitectura-reto.svg)
+
+| Nombre (`server_name`) | Lleva a… | Qué es |
+|---|---|---|
+| `intranet.innovatechsolutions.com` | los archivos de `intranet/` | La intranet: una tarjeta por servicio, como el portal de esta práctica |
+| `portainer.innovatechsolutions.com` | `portainer:9000` | Gestión de los contenedores |
+| `code.innovatechsolutions.com` | `code:8443` | code-server, para editar la intranet |
+| `duplicati.innovatechsolutions.com` | `duplicati:8200` | Copias de seguridad de la intranet y de Portainer |
+| `xxx.innovatechsolutions.com` | el que elijas | Tu servicio: Gitea, Uptime Kuma, Wiki.js… |
+
+Lo que cambia respecto a esta práctica:
+
+- **Un `server { }` por nombre**, igual que el de `kuma.localhost` de la Tarea 5, pero cambiando `.localhost` por `.innovatechsolutions.com`.
+- **El `server` de la intranet es el único con rutas.** Sirve la carpeta `intranet/` (como el portal sirve `proxy/web/`). Si quieres, puedes añadirle también `location /code/`, `location /portainer/`… como en las Tareas 2 a 4. Las tarjetas enlazan a la URL completa de cada subdominio (`http://code.innovatechsolutions.com/`).
+- **La carpeta `intranet/` se monta en dos contenedores:** en el proxy, que la sirve, y en code-server, que la edita. Un cambio hecho en code-server se ve al recargar la intranet.
+- **Los nombres tienen que llegar al servidor:** en tu DNS de Linux, un registro `A` por nombre, todos con la IP del servidor donde corre Docker.
 
 ---
 
@@ -628,12 +635,10 @@ Así debería quedar tu portal (la caja de Dozzle solo si haces el ⭐ Reto):
 - [ ] `.env.template` incluye `DB_PASSWORD` y el `.env` **no** está en el repositorio.
 - [ ] Has creado `RESPUESTAS.md` en la raíz del repositorio (junto a este README) con las respuestas a estas preguntas (2-3 líneas cada una):
   1. ¿Por qué solo el servicio `proxy` tiene `ports`? ¿Qué se gana con ello?
-  2. ¿Qué ruta recibe whoami con `rewrite` y sin él? ¿Para qué sirve el `rewrite`?
+  2. Al abrir `localhost/whoami/hola`, ¿qué ruta recibe whoami? ¿Qué línea del `nginx.conf` se encarga de eso?
   3. ¿Por qué tu web salía sin estilos y cómo lo arreglaste?
   4. ¿Por qué la base de datos no tiene un `location` en el proxy?
-  5. ¿Qué pasa al entrar en la ruta de un servicio parado? ¿Y en las demás rutas? ¿Por qué?
-  6. ¿Qué diferencia hay entre publicar por ruta y por subdominio? ¿Por qué Uptime Kuma necesita subdominio y code-server no?
-  7. ¿Por qué `loquesea.localhost` muestra el portal y `kuma.localhost/code/` no abre code-server?
+  5. ¿Qué diferencia hay entre publicar por ruta y por subdominio? ¿Por qué Uptime Kuma necesita subdominio y code-server no?
 
 Sube tus cambios:
 
