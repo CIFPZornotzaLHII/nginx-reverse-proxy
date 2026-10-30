@@ -1,8 +1,8 @@
 # 🔀 Práctica: reverse proxy con nginx y Docker
 
-En esta práctica vas a montar un **reverse proxy**: un único nginx que recibe todas las peticiones en el puerto 80 y las reparte entre varios servicios. Puede repartirlas de dos formas: **por ruta** (`localhost/code/`, `localhost/portainer/`…) o **por subdominio** (`code.localhost`, `kuma.localhost`…), y las dos se pueden combinar en el mismo proxy. Es lo que hay delante de casi cualquier servidor real.
+En esta práctica vas a montar un **reverse proxy**: un único nginx que recibe todas las peticiones en el puerto 80 y las reparte entre varios servicios. Puede repartirlas de dos formas, **por ruta** (`localhost/code/`, `localhost/portainer/`…) o **por subdominio** (`code.localhost`, `kuma.localhost`…), y las dos se pueden combinar en el mismo proxy. Es lo que hay delante de casi cualquier servidor real.
 
-Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server y Portainer) y lo vas ampliando con nuevos servicios, tarea a tarea.
+No empiezas de cero. El repositorio ya trae un entorno que funciona, con el proxy, un portal de inicio, code-server y Portainer, y tu trabajo consiste en ampliarlo con nuevos servicios, tarea a tarea.
 
 **Índice**
 
@@ -29,16 +29,9 @@ Partes de un entorno que ya funciona (el proxy, un portal de inicio, code-server
 
 ## 🎯 Qué vas a hacer
 
-1. Arrancas el entorno y personalizas el portal.
-2. Publicas **whoami** en `/whoami/` (guiada).
-3. Publicas una **web estática** en `/mi-web/` y arreglas un fallo.
-4. Publicas **Adminer** en `/adminer/` con una base de datos detrás.
-5. Publicas servicios **por subdominio**: `whoami.localhost` y `kuma.localhost`.
-6. ⭐ (Opcional) Publicas **Dozzle** en `/dozzle/`.
+Primero arrancarás el entorno y pondrás tu nombre en el portal. Después publicarás detrás del proxy un servicio nuevo en cada tarea: **whoami** en `/whoami/`, con todos los pasos explicados; una **web estática** en `/mi-web/`, en la que tendrás que arreglar un fallo; y **Adminer** en `/adminer/`, con una base de datos detrás. En la Tarea 5 cambiarás de forma de publicar y darás a algunos servicios su propio nombre, `whoami.localhost` y `kuma.localhost`. Si te sobra tiempo, el ⭐ Reto opcional consiste en publicar **Dozzle** en `/dozzle/`.
 
-Necesitas **Docker Desktop** (o Docker Engine con `docker compose`) y **Git**.
-
-Todos los comandos de esta práctica se ejecutan en una **terminal abierta en la carpeta del proyecto** (la que contiene `docker-compose.yml`). En Windows usa PowerShell o Git Bash, no CMD.
+Necesitas tener instalados **Docker Desktop** (o Docker Engine con `docker compose`) y **Git**. Todos los comandos de la práctica se ejecutan en una **terminal abierta en la carpeta del proyecto**, la que contiene `docker-compose.yml`. En Windows usa PowerShell o Git Bash, no CMD.
 
 ---
 
@@ -46,21 +39,19 @@ Todos los comandos de esta práctica se ejecutan en una **terminal abierta en la
 
 ### ¿Qué es un reverse proxy?
 
-Es un servidor que se pone **delante** de tus servicios y hace de recepcionista: todas las visitas entran por la misma puerta (el puerto 80) y él decide, mirando la URL, a qué servicio pasar cada petición.
+Un reverse proxy es un servidor que se pone **delante** de tus servicios y hace de recepcionista. Todas las visitas entran por la misma puerta, el puerto 80, y él decide, mirando la URL, a qué servicio pasa cada petición.
 
 ![Sin reverse proxy cada servicio publica su puerto; con reverse proxy solo se publica el 80](docs/img/sin-y-con-proxy.svg)
 
-Ventajas:
-
-- **Un solo puerto abierto.** Los servicios no se publican; solo se puede llegar a ellos a través del proxy.
-- **URLs fáciles de recordar:** `http://localhost/portainer/` en vez de `http://localhost:9000`.
-- **Un único punto de control** para añadir HTTPS, contraseñas, límites, logs…
+La primera ventaja es la seguridad: solo hay **un puerto abierto**, y a los servicios únicamente se puede llegar a través del proxy. La segunda es la comodidad, porque las URLs son fáciles de recordar: `http://localhost/portainer/` en vez de `http://localhost:9000`. Y además el proxy se convierte en **un único punto de control** donde, más adelante, se pueden añadir HTTPS, contraseñas, límites o logs para todos los servicios a la vez.
 
 ### Arquitectura de la práctica
 
 ![Arquitectura: el proxy reparte /, /code/ y /portainer/; tú añades whoami, mi-web y adminer](docs/img/arquitectura.svg)
 
-En la Tarea 5 añadirás además dos **nombres** (`whoami.localhost` y `kuma.localhost`) que entran por el mismo puerto 80 y el mismo proxy; el diagrama muestra solo la parte por ruta.
+El diagrama muestra la parte por ruta, que es la que montarás en las Tareas 1 a 4. En la Tarea 5 añadirás además dos **nombres**, `whoami.localhost` y `kuma.localhost`, que entran por el mismo puerto 80 y llegan al mismo proxy.
+
+Los ficheros del proyecto están organizados así:
 
 ```text
 nginx-reverse-proxy/
@@ -79,7 +70,7 @@ nginx-reverse-proxy/
 
 ### El `docker-compose.yml`
 
-El proxy es un `nginx:alpine` **sin Dockerfile**: la configuración y la web se le pasan como **volúmenes**.
+El proxy es un `nginx:alpine` **sin Dockerfile**. No hace falta construir ninguna imagen, porque la configuración y la web del portal se le pasan como **volúmenes**:
 
 ```yaml
 services:
@@ -97,18 +88,15 @@ services:
     ...
 ```
 
-Fíjate en dos cosas:
+Fíjate en que **solo el proxy tiene `ports`**. El resto de servicios viven en la red interna de Docker, y desde el navegador no se puede entrar en ellos directamente. Dentro de esa red, **el nombre de cada servicio funciona como su dirección**: el proxy llega a Portainer escribiendo `portainer:9000` y a code-server escribiendo `code:8443`, porque Docker hace de DNS y traduce esos nombres a la IP de cada contenedor.
 
-1. **Solo el proxy tiene `ports`.** El resto de servicios están en la red interna de Docker y no se puede entrar en ellos directamente desde el navegador.
-2. **El nombre del servicio es su nombre en la red.** Dentro de Docker, el proxy llega a Portainer con `portainer:9000` y a code-server con `code:8443`: Docker hace de DNS.
-
-Un volumen hace que el contenedor use **tus archivos**, no una copia: si cambias algo de `proxy/web/`, basta con recargar el navegador.
+Un volumen hace que el contenedor use **tus archivos**, no una copia. Por eso, si cambias algo en `proxy/web/`, basta con recargar el navegador para verlo.
 
 ![Los volúmenes conectan archivos de tu PC con rutas del contenedor](docs/img/volumenes.svg)
 
 ### El `nginx.conf`
 
-Cada servicio publicado ocupa un bloque como este (el de Portainer):
+Cada servicio publicado por ruta ocupa un bloque como este, que es el de Portainer:
 
 ```nginx
 # --- PORTAINER: /portainer/ → servicio "portainer", puerto 9000 ---
@@ -130,40 +118,31 @@ location /portainer/ {
 | `rewrite ^/portainer(/.*)$ $1 break;` | **Quita el prefijo:** `/portainer/api/status` pasa a ser `/api/status` |
 | `proxy_pass http://$destino;` | Reenvía la petición al servicio y devuelve su respuesta al navegador |
 
-La línea del `rewrite` se lee así: «si la ruta empieza por `/portainer`, guarda lo que viene detrás (`(/.*)`) y usa solo eso (`$1`)». El `break` significa «ya está, sigue con el `proxy_pass`».
+La línea del `rewrite` es la más difícil de leer. Dice lo siguiente: «si la ruta empieza por `/portainer`, guarda lo que viene detrás (`(/.*)`) y quédate solo con eso (`$1`)». El `break` final significa «ya está, no apliques más reglas y sigue con el `proxy_pass`». Cuando copies este bloque para otro servicio, recuerda que el prefijo aparece **cinco veces** y el nombre del servicio una, dentro de `$destino`, y que tienes que cambiarlos todos.
 
-Cuando copies este bloque para otro servicio, el prefijo aparece **cinco veces** y el nombre del servicio una (en `$destino`): cámbialos todos.
-
-Así viaja una petición:
+El diagrama siguiente muestra el viaje completo de una petición:
 
 ![Recorrido de una petición: location, rewrite y proxy_pass](docs/img/recorrido-peticion.svg)
 
-Pruébalo tú mismo: abre <http://localhost/portainer/api/status> y verás la respuesta JSON de Portainer, que ha recibido la petición como `/api/status`. Si la ruta no encaja con ningún `location` (por ejemplo `/apps.js`), nginx la busca como archivo del portal, y si no existe da `404`.
+Puedes comprobarlo tú mismo abriendo <http://localhost/portainer/api/status>. Verás la respuesta JSON de Portainer, que ha recibido la petición como `/api/status`. Cuando una ruta no encaja con ningún `location`, como `/apps.js`, nginx la busca como archivo del portal, y si ese archivo no existe responde con un `404`.
 
-Al principio del fichero hay tres cosas que no hace falta tocar, pero conviene entender:
+Al principio del fichero hay tres cosas más que no tienes que tocar, pero que conviene entender.
 
-- **Las cabeceras `proxy_set_header`.** Una *cabecera* es un dato extra que viaja con cada petición HTTP, además de la URL: para qué nombre va (`Host`), desde qué navegador, desde qué IP… Las que añade el proxy (`X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original. Sin ellas, el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2. Están **fuera** de los bloques `server` para que las hereden todos, también los de subdominio de la Tarea 5.
-- **El bloque `map … $connection_upgrade`** deja pasar los **WebSockets**, conexiones que se quedan abiertas. code-server no funciona sin ellos.
-- **`resolver 127.0.0.11`** junto con `set $destino` hacen que nginx busque cada servicio **en cada petición**, en vez de una sola vez al arrancar. Por eso el proxy arranca aunque un servicio esté parado o mal escrito: solo falla esa ruta, con un `502`.
+La primera son **las cabeceras `proxy_set_header`**. Una *cabecera* es un dato extra que viaja con cada petición HTTP además de la URL: para qué nombre va (`Host`), desde qué navegador, desde qué IP… Las que añade el proxy (`X-Real-IP`, `X-Forwarded-For`…) le cuentan al servicio quién hizo la petición original, porque sin ellas el servicio solo vería que le llama el proxy. Las verás en directo en la Tarea 2. Están escritas **fuera** de los bloques `server` para que las hereden todos, también los de subdominio de la Tarea 5.
+
+La segunda es **el bloque `map … $connection_upgrade`**, que deja pasar los **WebSockets**, un tipo de conexión que se queda abierta en lugar de cerrarse tras cada petición. code-server no funciona sin ellos.
+
+La tercera es **`resolver 127.0.0.11`**, que junto con `set $destino` hace que nginx busque cada servicio **en cada petición**, en vez de una sola vez al arrancar. Gracias a eso el proxy arranca aunque un servicio esté parado o mal escrito: solo falla la ruta de ese servicio, con un `502`, y el resto sigue funcionando.
 
 ### Rutas o subdominios: dos formas de repartir
 
 > 📌 Esta sección la necesitas en la **Tarea 5**. Si es tu primera lectura, puedes saltar a las [Tareas](#️-tareas) y volver aquí cuando llegues.
 
-Hasta ahora el proxy decide **mirando la ruta** (lo que va después del nombre). Pero también puede decidir **mirando el nombre** que has escrito en el navegador. Piensa en un edificio de oficinas con un solo portal (el puerto 80) y un recepcionista (nginx):
+Hasta ahora el proxy decide **mirando la ruta**, es decir, lo que va después del nombre. Pero también puede decidir **mirando el nombre** que has escrito en el navegador. Imagina un edificio de oficinas con un solo portal (el puerto 80) y un recepcionista (nginx). Publicar por ruta es como decirle «voy a la planta 3»: todos llegan a la misma dirección y el recepcionista te manda por el pasillo que toca. Publicar por subdominio es como si cada empresa del edificio tuviera **su propio rótulo y su propia dirección**, aunque físicamente todas compartan el mismo portal.
 
-- **Por ruta** es decirle «voy a la planta 3»: todos llegan a la misma dirección y el recepcionista te manda por el pasillo que toca.
-- **Por subdominio** es que cada empresa del edificio tenga **su propio rótulo y su propia dirección**, aunque físicamente sea el mismo portal.
+En el `nginx.conf` la diferencia se ve así. Un servicio publicado por ruta, como `http://localhost/code/`, es un `location /code/` dentro del `server` principal, y necesita el `rewrite` para quitar el prefijo. Un servicio publicado por subdominio, como `http://code.localhost/`, tiene su propio bloque `server { }` con `server_name code.localhost`, y no necesita `rewrite` porque el servicio está en `/`, como si fuera el único del servidor. Por eso por subdominio funcionan también los servicios que no admiten estar en una subruta, como Uptime Kuma.
 
-En el `nginx.conf`:
-
-- **Por ruta** (`http://localhost/code/`) es un `location /code/` dentro del `server` principal. Hace falta el `rewrite` para quitar el prefijo.
-- **Por subdominio** (`http://code.localhost/`) es un bloque `server { }` propio con `server_name code.localhost`. No hace falta `rewrite`: el servicio está en `/`, como si fuera el único. Por eso funcionan también los servicios que no admiten subruta, como Uptime Kuma.
-
-**Cómo decide nginx cuando hay de las dos.** Una petición pasa por dos filtros, siempre en este orden:
-
-1. **¿Qué `server`?** nginx compara el nombre de la petición (`Host`) con los `server_name`. Si ninguno encaja, la atiende el que lleva `default_server`: en esta práctica, el servidor principal con el portal y las rutas.
-2. **¿Qué `location`?** Dentro del `server` elegido, compara la ruta con sus `location`.
+Cuando el fichero tiene bloques de los dos tipos, nginx decide en dos pasos y siempre en el mismo orden. Primero elige **el `server`**: compara el nombre de la petición (la cabecera `Host`) con los `server_name`, y si ninguno encaja, la atiende el que lleva `default_server`, que en esta práctica es el servidor principal con el portal y las rutas. Después, dentro del `server` elegido, elige **el `location`** comparando la ruta. Estos tres ejemplos muestran el camino completo:
 
 ```text
 http://kuma.localhost/dashboard   → server kuma.localhost  → location /          → kuma:3001  recibe /dashboard
@@ -171,15 +150,9 @@ http://localhost/code/            → server principal       → location /code/
 http://localhost/kuma/            → server principal       → ningún location     → 404 del portal
 ```
 
-**Combinarlas** es tan sencillo como tener los dos tipos de bloque en el mismo `nginx.conf`: el `server` principal (portal + rutas) y un `server` por cada subdominio. Un mismo servicio puede incluso publicarse de las dos formas a la vez (un `location` en el principal y su propio `server`): cada bloque es solo una puerta más hacia el mismo contenedor. Un reparto razonable:
+Combinar las dos formas es tan sencillo como tener los dos tipos de bloque en el mismo `nginx.conf`: el `server` principal, con el portal y las rutas, y un `server` por cada subdominio. Un mismo servicio puede incluso publicarse de las dos formas a la vez, porque cada bloque es solo una puerta más hacia el mismo contenedor. Lo razonable es publicar por ruta el portal y los servicios que funcionan bien detrás de un prefijo (code-server, Portainer, Adminer…), y por subdominio los que no admiten subruta o usan rutas absolutas (Uptime Kuma y muchas webs), además de los que queremos que tengan una dirección «limpia», como `www` o `intranet`.
 
-- **Por ruta:** el portal y los servicios que funcionan bien detrás de un prefijo (code-server, Portainer, Adminer…).
-- **Por subdominio:** los que no admiten subruta o tienen rutas absolutas (Uptime Kuma, muchas webs), y los que queremos que tengan una dirección «limpia» (`www`, `intranet`…).
-
-**¿Cómo llega el nombre al proxy?** El nombre tiene que **resolver a la IP del proxy**:
-
-- **En tu PC, con `algo.localhost`:** no hagas nada. Chrome, Edge y Firefox lo resuelven solos a `127.0.0.1`.
-- **En un servidor real con dominio propio:** un registro `A` en el DNS por cada nombre, apuntando a la IP del servidor.
+Para que un nombre llegue al proxy, tiene que **resolver a la IP del proxy**. En tu PC no tienes que hacer nada si usas nombres terminados en `.localhost`, porque Chrome, Edge y Firefox los resuelven solos a `127.0.0.1`. En un servidor real con dominio propio, en cambio, hay que crear en el DNS un registro `A` por cada nombre, apuntando a la IP del servidor.
 
 > Si publicas el proxy en otro puerto (`"8080:80"`), el puerto va detrás del nombre: `http://kuma.localhost:8080/`. nginx compara el nombre sin el puerto, así que el `server_name` no cambia.
 
@@ -189,7 +162,7 @@ http://localhost/kuma/            → server principal       → ningún locatio
 
 ### Tarea 1 · Arranca el entorno y explóralo
 
-**1. Clona tu repositorio y crea el `.env`:**
+**1. Clona tu repositorio y crea el `.env`.**
 
 ```bash
 git clone <url-de-tu-repositorio>   # la URL del botón "Code" de tu repositorio en GitHub
@@ -197,16 +170,16 @@ cd nginx-reverse-proxy              # o el nombre que tenga la carpeta que se ha
 cp .env.template .env
 ```
 
-Abre `.env` y cambia `cambiame` por una contraseña tuya: es la de code-server. Docker Compose lee este fichero solo, y `docker-compose.yml` usa el valor con `${CODE_PASSWORD:?mensaje}`: coge la variable del `.env` y, si no existe, se para y muestra el mensaje. El `.env` está en `.gitignore`, así que nunca se sube a GitHub.
+Abre el fichero `.env` y cambia `cambiame` por una contraseña tuya, que será la de code-server. Docker Compose lee este fichero automáticamente, y `docker-compose.yml` usa el valor con la expresión `${CODE_PASSWORD:?mensaje}`, que significa «coge la variable del `.env` y, si no existe, para y muestra este mensaje». El `.env` está en `.gitignore`, así que nunca se sube a GitHub.
 
-**2. Arranca todo** y comprueba el estado. La primera vez descarga las imágenes y tarda unos minutos:
+**2. Arranca todo y comprueba el estado.** La primera vez Docker tiene que descargar las imágenes, así que tardará unos minutos.
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-Salida resumida (la tuya tendrá más columnas):
+La salida será parecida a esta, aunque la tuya tendrá más columnas:
 
 ```text
 SERVICE     STATUS         PORTS
@@ -215,33 +188,32 @@ portainer   Up 5 seconds   8000/tcp, 9000/tcp, 9443/tcp
 proxy       Up 5 seconds   0.0.0.0:80->80/tcp
 ```
 
-Solo `proxy` tiene un puerto publicado (`0.0.0.0:80->80`). Los demás muestran sus puertos internos, que no son accesibles desde fuera.
+Solo `proxy` tiene un puerto publicado (`0.0.0.0:80->80`). Los demás muestran únicamente sus puertos internos, que no son accesibles desde fuera de Docker.
 
-**3. Abre <http://localhost/>.** Es el portal, servido por el propio proxy desde `proxy/web/`:
+**3. Abre <http://localhost/>.** Lo que ves es el portal, que sirve el propio proxy desde la carpeta `proxy/web/`.
 
 ![Portal de inicio con Code Server y Portainer](docs/img/portal-inicial.png)
 
-**4. Entra en Code Server** (`/code/`) con la contraseña del `.env`. Es VS Code en el navegador, abierto sobre la carpeta del proyecto. Puedes editar los ficheros de la práctica desde aquí o desde el VS Code de tu PC: es la misma carpeta, elige lo que prefieras. Si te pregunta si confías en la carpeta, pulsa **Trust**.
+**4. Entra en Code Server** (`/code/`) con la contraseña que pusiste en el `.env`. Es VS Code funcionando en el navegador, abierto sobre la carpeta del proyecto, así que puedes editar los ficheros de la práctica desde aquí o desde el VS Code de tu PC: es la misma carpeta y da igual cuál elijas. Si te pregunta si confías en la carpeta, pulsa **Trust**.
 
 ![code-server con nginx.conf abierto, a través de /code/](docs/img/code-server.png)
 
-**5. Entra en Portainer** (`/portainer/`) y crea el usuario administrador. ⏱️ **Hazlo nada más arrancar:** Portainer solo da **5 minutos** para crear el usuario. Si se pasan, al entrar en `/portainer/` verás un `404` en `/timeout.html`; ejecuta `docker compose restart portainer` y vuelve a intentarlo (el token cambia en cada arranque).
+**5. Entra en Portainer** (`/portainer/`) y crea el usuario administrador. ⏱️ **Hazlo nada más arrancar**, porque Portainer solo da **5 minutos** para crear el usuario. Si se pasa ese tiempo, al entrar en `/portainer/` verás un `404` en `/timeout.html`; en ese caso ejecuta `docker compose restart portainer` y vuelve a intentarlo.
 
-- La contraseña debe tener **al menos 12 caracteres**.
-- Te pide un **setup token**, que Portainer escribe en sus logs al arrancar:
+La contraseña tiene que tener **al menos 12 caracteres**. Además, Portainer te pedirá un **setup token**, un código que escribe en sus logs cada vez que arranca. Puedes encontrarlo con este comando:
 
-  ```bash
-  docker compose logs portainer | grep setup_token              # Git Bash, Linux, macOS
-  docker compose logs portainer | Select-String setup_token     # PowerShell
-  ```
+```bash
+docker compose logs portainer | grep setup_token              # Git Bash, Linux, macOS
+docker compose logs portainer | Select-String setup_token     # PowerShell
+```
 
-  ```text
-  portainer-1  | setup_token=64752a9c...
-  ```
+```text
+portainer-1  | setup_token=64752a9c...
+```
 
 ![Pantalla de alta de Portainer con el campo Setup token](docs/img/portainer-setup.png)
 
-**6. Personaliza el portal.** Edita `proxy/web/apps.js` y cambia el título y el pie (pon tu nombre):
+**6. Personaliza el portal.** Edita `proxy/web/apps.js` y cambia el título y el pie, poniendo tu nombre:
 
 ```js
 const PORTAL = {
@@ -251,17 +223,17 @@ const PORTAL = {
 };
 ```
 
-Guarda y recarga el navegador (F5). No hace falta reiniciar nada: `proxy/web/` es un volumen.
+Guarda y recarga el navegador con F5. No hace falta reiniciar nada, porque `proxy/web/` es un volumen.
 
-✅ **Comprueba:** el portal muestra tu nombre, entras en code-server y en Portainer, y <http://localhost:9000> **no** responde. Portainer solo es accesible a través del proxy.
+✅ **Comprueba** que el portal muestra tu nombre, que puedes entrar en code-server y en Portainer, y que <http://localhost:9000> **no** responde, porque a Portainer solo se llega a través del proxy.
 
 ---
 
 ### Tarea 2 · Tu primer servicio: whoami
 
-[whoami](https://github.com/traefik/whoami) es un servidor web diminuto que responde con **la petición que le ha llegado**. Es perfecto para ver qué hace el proxy con cada petición.
+[whoami](https://github.com/traefik/whoami) es un servidor web diminuto que responde mostrando **la petición que le ha llegado**. Eso lo hace perfecto para ver qué hace el proxy con cada petición antes de pasársela.
 
-**1. Añade el servicio** en `docker-compose.yml`, sin `ports`. Va al final de la sección `services:`, es decir, **después de `portainer:` y antes de la línea `volumes:`** (hay un comentario que marca el sitio), con la misma sangría de dos espacios que los demás:
+**1. Añade el servicio** en `docker-compose.yml`, sin `ports`. Tiene que ir al final de la sección `services:`, es decir, **después de `portainer:` y antes de la línea `volumes:`**, donde hay un comentario que marca el sitio. Respeta la misma sangría de dos espacios que tienen los demás servicios:
 
 ```yaml
   whoami:                       # → /whoami/
@@ -269,7 +241,7 @@ Guarda y recarga el navegador (F5). No hace falta reiniciar nada: `proxy/web/` e
     restart: unless-stopped
 ```
 
-El fichero tiene que quedar así por dentro:
+Por dentro, el fichero tiene que quedar con esta estructura:
 
 ```yaml
 services:
@@ -282,11 +254,13 @@ volumes:
   …
 ```
 
+Después arranca el nuevo contenedor:
+
 ```bash
 docker compose up -d
 ```
 
-**2. Añade su bloque** en `proxy/nginx.conf`, dentro del `server` principal: después del bloque de Portainer y **antes de la `}` que cierra el `server`** (también hay un comentario que marca el sitio). whoami escucha en el puerto **80**:
+**2. Añade su bloque** en `proxy/nginx.conf`, dentro del `server` principal. Va después del bloque de Portainer y **antes de la `}` que cierra el `server`**; también aquí hay un comentario que marca el sitio. whoami escucha en el puerto **80**:
 
 ```nginx
     # --- WHOAMI: /whoami/ → servicio "whoami", puerto 80 ---
@@ -299,16 +273,16 @@ docker compose up -d
     }
 ```
 
-**3. Reinicia el proxy** para que lea la nueva configuración, y mira sus logs por si hay errores:
+**3. Reinicia el proxy** para que lea la nueva configuración, y mira sus logs por si hay algún error:
 
 ```bash
 docker compose restart proxy
 docker compose logs proxy
 ```
 
-Verás varias líneas de arranque (`docker-entrypoint.sh`, `Configuration complete`…): son normales. Si no aparece ninguna con `[emerg]`, está bien.
+Verás varias líneas de arranque, como `docker-entrypoint.sh` o `Configuration complete`, que son normales. Si no aparece ninguna línea con `[emerg]`, la configuración está bien.
 
-**4. Prueba** <http://localhost/whoami/hola>. Verás algo así (tus IPs serán otras):
+**4. Prueba** <http://localhost/whoami/hola>. Verás algo parecido a esto, aunque tus IPs serán otras:
 
 ```text
 Hostname: 5d30021cbe95
@@ -324,7 +298,9 @@ X-Forwarded-Proto: http
 X-Real-Ip: 172.22.0.1
 ```
 
-**5. Añádelo al portal** en `proxy/web/apps.js`, dentro de la lista `APPS`: después de la caja de Portainer y **antes del `];` que cierra la lista** (hay un comentario que marca el sitio):
+Fíjate en la línea `GET /hola`: aunque tú pediste `/whoami/hola`, a whoami le llega la ruta sin el prefijo, porque el `rewrite` lo ha quitado por el camino.
+
+**5. Añádelo al portal** en `proxy/web/apps.js`, dentro de la lista `APPS`. La caja nueva va después de la de Portainer y **antes del `];` que cierra la lista**, donde hay otro comentario que marca el sitio:
 
 ```js
   {
@@ -335,15 +311,15 @@ X-Real-Ip: 172.22.0.1
   },
 ```
 
-✅ **Comprueba:** <http://localhost/whoami/hola> muestra `GET /hola` y la caja de Whoami está en el portal.
+✅ **Comprueba** que <http://localhost/whoami/hola> muestra `GET /hola` y que la caja de Whoami aparece en el portal.
 
 ---
 
 ### Tarea 3 · Publica una web estática
 
-En `servicios/mi-web/` tienes una web sencilla. La va a servir **su propio contenedor nginx**, y el proxy la publicará en `/mi-web/`.
+En la carpeta `servicios/mi-web/` tienes una web sencilla. Esta vez no la servirá el proxy, sino **su propio contenedor nginx**, y el proxy se limitará a publicarla en `/mi-web/`.
 
-**1. Añade el servicio.** Es la misma idea que el proxy: un `nginx:alpine` con la web montada como volumen.
+**1. Añade el servicio.** Es la misma idea que el proxy: un `nginx:alpine` con la web montada como volumen. Va en el mismo sitio del `docker-compose.yml` que whoami.
 
 ```yaml
   mi-web:                       # → /mi-web/
@@ -353,49 +329,49 @@ En `servicios/mi-web/` tienes una web sencilla. La va a servir **su propio conte
       - ./servicios/mi-web:/usr/share/nginx/html:ro
 ```
 
-**2. Escribe tú el bloque** en `nginx.conf`, en el mismo sitio que el de whoami. Datos: ruta `/mi-web/`, servicio `mi-web`, puerto `80`. Copia el bloque de whoami y cambia `whoami` por `mi-web` en **las seis veces** que aparece (sin contar el comentario); el guion no da problemas en nginx. Reinicia el proxy.
+**2. Escribe tú el bloque** en `nginx.conf`, en el mismo sitio que el de whoami. La ruta es `/mi-web/`, el servicio se llama `mi-web` y escucha en el puerto `80`. Lo más fácil es copiar el bloque de whoami y cambiar `whoami` por `mi-web` en **las seis veces** que aparece, sin contar el comentario; el guion del nombre no da ningún problema en nginx. Cuando termines, arranca el contenedor con `docker compose up -d` y reinicia el proxy.
 
-**3. Abre <http://localhost/mi-web/>.** Algo falla: la página sale **sin estilos**.
+**3. Abre <http://localhost/mi-web/>.** Verás que algo falla, porque la página sale **sin estilos**, como en la imagen de la izquierda. Al terminar la tarea tendrá que verse como la de la derecha.
 
 <p align="center">
   <img src="docs/img/mi-web-rota.png" width="49%" alt="La web sin estilos">
   <img src="docs/img/mi-web-ok.png" width="49%" alt="La web con estilos">
 </p>
 
-**4. Investiga.** Pulsa **F12 → Red (Network)** y recarga. Verás que `web.css` da **404** y que el navegador lo ha pedido a `http://localhost/css/web.css`, fuera de `/mi-web/`. Mira el `<link>` de `servicios/mi-web/index.html`:
+**4. Investiga qué pasa.** Pulsa **F12**, abre la pestaña **Red** (Network) y recarga la página. Verás que el archivo `web.css` da **404** y que el navegador lo ha pedido a `http://localhost/css/web.css`, fuera de `/mi-web/`. La causa está en el `<link>` de `servicios/mi-web/index.html`:
 
 ```html
 <link rel="stylesheet" href="/css/web.css">
 ```
 
-La ruta empieza por `/`, así que es **absoluta**: el navegador la busca en la raíz del servidor, que es el portal, no tu web.
+Como la ruta empieza por `/`, es una ruta **absoluta**, y el navegador la busca en la raíz del servidor. Pero la raíz del servidor es el portal, no tu web, y en el portal no hay ningún `css/web.css`.
 
 ![Rutas absolutas y relativas detrás de un prefijo](docs/img/rutas-relativas.svg)
 
-**5. Arréglalo** quitando la `/` inicial (`href="css/web.css"`) y recarga con F5. Como la web es un volumen, el cambio se ve al momento. Pon también tu nombre en el `<h1>`.
+**5. Arréglalo** quitando la `/` inicial, de forma que quede `href="css/web.css"`, y recarga con F5. Como la web es un volumen, el cambio se ve al momento, sin reiniciar nada. Aprovecha para poner tu nombre en el `<h1>`.
 
-> El enlace **Volver al portal** (`href="/"`) sí es absoluto a propósito: queremos salir de `/mi-web/` e ir a la raíz.
+> El enlace **Volver al portal** (`href="/"`) sí es absoluto, y es a propósito: en ese caso queremos salir de `/mi-web/` e ir a la raíz.
 
-**6. Añádela al portal** en `apps.js`.
+**6. Añádela al portal** en `apps.js`, igual que hiciste con whoami.
 
-✅ **Comprueba:** <http://localhost/mi-web/> se ve con estilos y con tu nombre, en **F12 → Red** `web.css` da `200`, y la caja está en el portal.
+✅ **Comprueba** que <http://localhost/mi-web/> se ve con estilos y con tu nombre, que en **F12 → Red** el archivo `web.css` da `200`, y que la caja aparece en el portal.
 
 ---
 
 ### Tarea 4 · Adminer y una base de datos
 
-[Adminer](https://www.adminer.org/) es un gestor de bases de datos web. Vas a publicarlo en `/adminer/` con una base de datos MariaDB detrás. **La base de datos no se publica:** solo Adminer habla con ella, dentro de la red de Docker.
+[Adminer](https://www.adminer.org/) es un gestor de bases de datos que funciona en el navegador. Vas a publicarlo en `/adminer/` con una base de datos MariaDB detrás. La base de datos, en cambio, **no se publica**: solo Adminer habla con ella, dentro de la red de Docker.
 
-**1. Añade la contraseña de la base de datos** al `.env` y también a `.env.template`, para que quien clone tu repositorio sepa que hace falta. En `.env` pon una contraseña tuya; en `.env.template` deja `cambiame`:
+**1. Añade la contraseña de la base de datos** al `.env` y también a `.env.template`, para que quien clone tu repositorio sepa que tiene que ponerla. En `.env` escribe una contraseña tuya; en `.env.template` deja `cambiame`.
 
 ```bash
 # Contraseña del usuario root de MariaDB
 DB_PASSWORD=cambiame
 ```
 
-> MariaDB fija la contraseña **la primera vez que arranca**. Si la cambias en `.env` después, la base de datos sigue con la antigua (ver [Problemas frecuentes](#-problemas-frecuentes)).
+> MariaDB fija la contraseña **la primera vez que arranca**. Si después la cambias en `.env`, la base de datos seguirá con la antigua (lo tienes explicado en [Problemas frecuentes](#-problemas-frecuentes)).
 
-**2. Añade los dos servicios:**
+**2. Añade los dos servicios** en `docker-compose.yml`, en el mismo sitio que los anteriores:
 
 ```yaml
   db:                           # base de datos: NO pasa por el proxy
@@ -414,9 +390,9 @@ DB_PASSWORD=cambiame
       ADMINER_DEFAULT_SERVER: db
 ```
 
-La línea `${DB_PASSWORD:?Falta DB_PASSWORD en .env}` es la misma sintaxis que ya usa `CODE_PASSWORD`: lee la variable del `.env` y, si no existe, `docker compose` se para con ese mensaje. Cópiala tal cual.
+La línea `${DB_PASSWORD:?Falta DB_PASSWORD en .env}` usa la misma sintaxis que `CODE_PASSWORD`: lee la variable del `.env` y, si no existe, `docker compose` se para con ese mensaje. Cópiala tal cual.
 
-Y declara el volumen al final del fichero, en la sección `volumes:`:
+La base de datos guarda sus datos en un volumen nuevo, `db_datos`, que tienes que declarar al final del fichero, en la sección `volumes:`:
 
 ```yaml
 volumes:
@@ -425,25 +401,25 @@ volumes:
   db_datos:
 ```
 
-**3. Escribe el bloque** de `/adminer/` en `nginx.conf`. Adminer escucha en el puerto **8080**. Arranca con `docker compose up -d` y reinicia el proxy.
+**3. Escribe el bloque** de `/adminer/` en `nginx.conf`, igual que hiciste con `mi-web`, teniendo en cuenta que Adminer escucha en el puerto **8080**. Después arranca los contenedores con `docker compose up -d` y reinicia el proxy.
 
-**4. Entra en <http://localhost/adminer/>** con servidor `db`, usuario `root`, la contraseña del `.env` y base de datos `clase`. Fíjate en que el servidor es `db`: otra vez, el nombre del servicio.
+**4. Entra en <http://localhost/adminer/>** con el servidor `db`, el usuario `root`, la contraseña del `.env` y la base de datos `clase`. Fíjate en que el servidor se llama `db`: otra vez, el nombre del servicio funciona como dirección dentro de la red de Docker.
 
-> MariaDB tarda unos 10-20 segundos en prepararse la primera vez. Si Adminer dice que no puede conectar, no toques nada: espera y vuelve a intentarlo. `docker compose logs db` termina en `ready for connections` cuando está lista.
+> La primera vez, MariaDB tarda entre 10 y 20 segundos en prepararse. Si Adminer dice que no puede conectar, no toques nada: espera un poco y vuelve a intentarlo. Sabrás que está lista cuando `docker compose logs db` termine con `ready for connections`.
 
 ![Login de Adminer con el servidor db](docs/img/adminer-login.png)
 
-**5. Añádelo al portal.**
+**5. Añádelo al portal** con su caja en `apps.js`.
 
-✅ **Comprueba:** entras en Adminer y ves la base de datos `clase` (vacía), la caja está en el portal, y <http://localhost:8080> **no** responde: Adminer, como la base de datos, solo se alcanza desde dentro de la red de Docker.
+✅ **Comprueba** que entras en Adminer y ves la base de datos `clase` (todavía vacía), que su caja está en el portal y que <http://localhost:8080> **no** responde, porque Adminer, igual que la base de datos, solo se alcanza desde dentro de la red de Docker.
 
 ---
 
 ### Tarea 5 · Publica por subdominio y combina las dos formas
 
-Hasta ahora todo cuelga de `localhost/…`. En esta tarea vas a dar a algunos servicios **su propio nombre**, sin tocar las rutas que ya funcionan. Antes de empezar, repasa [Rutas o subdominios](#rutas-o-subdominios-dos-formas-de-repartir).
+Hasta ahora todos los servicios cuelgan de `localhost/…`. En esta tarea vas a dar a algunos de ellos **su propio nombre**, sin tocar las rutas que ya funcionan. Antes de empezar, repasa la sección [Rutas o subdominios](#rutas-o-subdominios-dos-formas-de-repartir).
 
-**1. whoami también por subdominio.** No hace falta un contenedor nuevo: es el mismo whoami de la Tarea 2. Al final de `proxy/nginx.conf`, **fuera** del `server` principal, añade un bloque `server` propio (tienes la plantilla comentada al final del fichero):
+**1. Publica whoami también por subdominio.** No necesitas un contenedor nuevo, porque es el mismo whoami de la Tarea 2. Al final de `proxy/nginx.conf`, **fuera** del `server` principal, añade un bloque `server` propio. Tienes una plantilla comentada al final del fichero:
 
 ```nginx
 # --- WHOAMI por subdominio: whoami.localhost → servicio "whoami", puerto 80 ---
@@ -459,13 +435,13 @@ server {
 }
 ```
 
-Fíjate en lo que **no** está: ni `rewrite`, ni redirección de la barra final. No hay prefijo que quitar. La línea `set $prefijo "";` hace falta porque la cabecera común `X-Forwarded-Prefix` usa esa variable y nginx se queja si no está definida; al estar vacía, la cabecera no se envía.
+Fíjate en lo que **no** está: no hay `rewrite` ni redirección de la barra final, porque no hay ningún prefijo que quitar. La línea `set $prefijo "";` hace falta porque la cabecera común `X-Forwarded-Prefix` usa esa variable y nginx se queja si no está definida; como la dejamos vacía, la cabecera no se envía.
 
-Reinicia el proxy y abre <http://whoami.localhost/hola>. whoami recibe `GET /hola`, igual que en <http://localhost/whoami/hola> (que sigue funcionando), pero aquí sin necesidad de `rewrite`. Es el mismo contenedor, publicado de **las dos formas a la vez**.
+Reinicia el proxy y abre <http://whoami.localhost/hola>. whoami recibe `GET /hola`, igual que en <http://localhost/whoami/hola>, que sigue funcionando, pero esta vez sin necesidad de `rewrite`. Es el mismo contenedor, publicado de **las dos formas a la vez**.
 
-> ¿No abre `whoami.localhost`? Tu navegador no resuelve `*.localhost`. Prueba primero con Chrome, Edge o Firefox, que lo resuelven solos. Si no, añade `127.0.0.1 whoami.localhost` a tu fichero `hosts` (hace falta permiso de administrador; ver [cómo llega el nombre al proxy](#rutas-o-subdominios-dos-formas-de-repartir)).
+> Si `whoami.localhost` no abre, es que tu navegador no resuelve los nombres `*.localhost`. Prueba con Chrome, Edge o Firefox, que lo hacen solos. Si aun así no funciona, añade la línea `127.0.0.1 whoami.localhost` a tu fichero `hosts`, para lo que necesitas permisos de administrador.
 
-**2. Uptime Kuma: un servicio que necesita subdominio.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) vigila si tus servicios están en marcha. No funciona en una subruta, así que es el candidato perfecto para un subdominio.
+**2. Publica Uptime Kuma, un servicio que necesita subdominio.** [Uptime Kuma](https://github.com/louislam/uptime-kuma) vigila si tus servicios están en marcha. No funciona en una subruta, así que es el candidato perfecto para un subdominio. Añade el servicio en el mismo sitio del `docker-compose.yml` que los anteriores:
 
 ```yaml
   kuma:                         # → http://kuma.localhost/
@@ -475,11 +451,11 @@ Reinicia el proxy y abre <http://whoami.localhost/hola>. whoami recibe `GET /hol
       - kuma_datos:/app/data
 ```
 
-Declara `kuma_datos:` en la sección `volumes:` y escribe **tú** su bloque `server` con `server_name kuma.localhost`. Kuma escucha en el puerto **3001** y usa WebSockets (ya están cubiertos por las cabeceras comunes). Arranca con `docker compose up -d` y reinicia el proxy.
+Declara también `kuma_datos:` en la sección `volumes:`, y escribe **tú** su bloque `server`, con `server_name kuma.localhost`, siguiendo el de whoami. Kuma escucha en el puerto **3001** y usa WebSockets, que ya están cubiertos por las cabeceras comunes. Arranca con `docker compose up -d` y reinicia el proxy.
 
-Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cada servicio. Usa sus nombres internos: `http://whoami`, `http://mi-web`, `http://portainer:9000`… Kuma está dentro de la red de Docker y los encuentra igual que el proxy.
+Después abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cada servicio. Usa sus nombres internos, como `http://whoami`, `http://mi-web` o `http://portainer:9000`: Kuma está dentro de la red de Docker y los encuentra igual que el proxy.
 
-**3. Añade la caja de Uptime Kuma al portal.** Para un subdominio, `ruta` es la URL completa (si publicaste el proxy en otro puerto, inclúyelo: `http://kuma.localhost:8080/`). whoami ya tiene su caja; si quieres, añade otra que apunte a `http://whoami.localhost/`:
+**3. Añade la caja de Uptime Kuma al portal.** En un servicio publicado por subdominio, `ruta` tiene que ser la URL completa; si publicaste el proxy en otro puerto, inclúyelo también (`http://kuma.localhost:8080/`).
 
 ```js
   {
@@ -490,29 +466,23 @@ Abre <http://kuma.localhost/>, crea el usuario y añade un monitor HTTP para cad
   },
 ```
 
-✅ **Comprueba:** <http://whoami.localhost/hola> responde y <http://localhost/whoami/hola> sigue funcionando, y <http://kuma.localhost/> abre Uptime Kuma con tus monitores en verde y su caja está en el portal.
+✅ **Comprueba** que <http://whoami.localhost/hola> responde y que <http://localhost/whoami/hola> sigue funcionando, y que <http://kuma.localhost/> abre Uptime Kuma con tus monitores en verde y con su caja en el portal.
 
-> **Cuando no estás en tu PC.** En un servidor real con dominio propio, cambia `.localhost` por tu dominio: `server_name intranet.miempresa.com;`. Después crea en el DNS un registro `A` por subdominio que apunte a la IP del servidor donde corre el proxy. nginx no cambia nada más.
+> En un servidor real con dominio propio, basta con cambiar `.localhost` por tu dominio, por ejemplo `server_name intranet.miempresa.com;`, y crear en el DNS un registro `A` por cada nombre, apuntando a la IP del servidor donde corre el proxy. En nginx no cambia nada más.
 
 ---
 
 ### ⭐ Reto · Un servicio que conoce su prefijo
 
-Hasta ahora el proxy **quitaba el prefijo** con `rewrite` y el servicio creía estar en `/`. Algunos servicios funcionan mejor (o solo funcionan) si **saben** en qué ruta están publicados. En ese caso se les configura su ruta base y el proxy pasa la petición **sin rewrite**.
+Hasta ahora el proxy **quitaba el prefijo** con `rewrite`, y el servicio creía estar en `/`. Algunos servicios funcionan mejor, o solo funcionan, si **saben** en qué ruta están publicados. En ese caso se les configura su ruta base y el proxy les pasa la petición entera, **sin rewrite**.
 
 ![Dos formas de publicar un servicio en una subruta](docs/img/estrategias-prefijo.svg)
 
-Publica [Dozzle](https://dozzle.dev/), un visor de logs de contenedores, en `/dozzle/`. Pistas:
+El reto consiste en publicar [Dozzle](https://dozzle.dev/), un visor de logs de contenedores, en `/dozzle/`. Su imagen es `amir20/dozzle:latest` y escucha en el puerto **8080**. Para leer los logs necesita acceder al **socket de Docker**, que es la «puerta» por la que un contenedor habla con Docker; Portainer ya lo usa, así que puedes copiar su línea de volumen añadiendo `:ro` al final para que sea de solo lectura. La ruta base se configura con la variable de entorno `DOZZLE_BASE=/dozzle`, y por eso su bloque en `nginx.conf` **no** lleva `rewrite`. La primera vez que entres te mostrará un asistente de configuración: pulsa **Continuar sin inicio de sesión**.
 
-- Imagen `amir20/dozzle:latest`, puerto **8080**.
-- Necesita leer el **socket de Docker**, la «puerta» por la que un contenedor habla con Docker (Portainer ya la usa en el `docker-compose.yml`): `/var/run/docker.sock:/var/run/docker.sock:ro`.
-- Su ruta base se configura con la variable de entorno `DOZZLE_BASE=/dozzle`.
-- Su bloque en `nginx.conf` **no** lleva `rewrite`.
-- La primera vez muestra un asistente de configuración: pulsa **Continuar sin inicio de sesión**.
+Si prefieres otro servicio, busca en su documentación las palabras *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones, como Uptime Kuma, no funcionan en una subruta, y para esas tendrás que usar un subdominio, como en la [Tarea 5](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas).
 
-Si prefieres otro servicio, busca en su documentación *base path*, *subpath* o *reverse proxy*. Ten en cuenta que algunas aplicaciones no funcionan en una subruta (por ejemplo, Uptime Kuma): para esas, usa un subdominio como en la [Tarea 5](#tarea-5--publica-por-subdominio-y-combina-las-dos-formas).
-
-✅ **Comprueba:** <http://localhost/dozzle/> muestra los logs de tus contenedores y tiene su caja en el portal.
+✅ **Comprueba** que <http://localhost/dozzle/> muestra los logs de tus contenedores y que tiene su caja en el portal.
 
 ---
 
@@ -522,26 +492,27 @@ En el reto **PYME digital** montarás lo mismo para InnovaTech Solutions. Este e
 
 ![Arquitectura final del reto: server www, server intranet con los servicios por ruta y Duplicati aparte](docs/img/arquitectura-reto.svg)
 
-- **Dos `server { }` en el `nginx.conf`:** `www.innovatechsolutions.com` sirve la web pública (carpeta `www/`) e `intranet.innovatechsolutions.com` sirve la intranet (carpeta `intranet/`). Son como el `server` de `kuma.localhost` de la Tarea 5, pero cambiando `.localhost` por `.innovatechsolutions.com`.
-- **Los servicios cuelgan de la intranet por ruta**, como en las Tareas 2 a 4: `/portainer/`, `/code/` y `/xxx/` para el servicio que elijas. Las tarjetas de la intranet enlazan a esas rutas.
-- **Duplicati es la excepción:** no funciona en una ruta (pide sus archivos en `/ngclient/…`, el mismo problema de la Tarea 3), así que lleva su propio `server` con el nombre `duplicati.innovatechsolutions.com`. Si el servicio que elijas tampoco funciona en una ruta, haz lo mismo con él.
-- **La carpeta `intranet/` se monta en el proxy y en code-server:** un cambio hecho en code-server se ve al recargar la intranet.
-- **En tu DNS de Linux,** crea un registro `A` para `www`, `intranet` y `duplicati`, todos con la IP del servidor donde corre Docker.
+El `nginx.conf` tendrá **dos bloques `server`**. El primero, `www.innovatechsolutions.com`, sirve la web pública desde la carpeta `www/`, y el segundo, `intranet.innovatechsolutions.com`, sirve la intranet desde la carpeta `intranet/`. Los dos son como el `server` de `kuma.localhost` de la Tarea 5, cambiando `.localhost` por `.innovatechsolutions.com`.
+
+Los servicios cuelgan de la intranet **por ruta**, igual que en las Tareas 2 a 4: Portainer en `/portainer/`, code-server en `/code/` y el servicio que elijas en su propia ruta. Las tarjetas de la intranet son enlaces a esas rutas, como las cajas del portal de esta práctica.
+
+Duplicati es la única excepción. No funciona en una ruta, porque pide sus archivos en `/ngclient/…`, que es el mismo problema de rutas absolutas de la Tarea 3, así que necesita su propio `server` con el nombre `duplicati.innovatechsolutions.com`. Si el servicio que elijas tampoco funciona en una ruta, haz lo mismo con él.
+
+La carpeta `intranet/` se monta como volumen en dos contenedores: en el proxy, que la sirve, y en code-server, que la edita. Así, un cambio hecho desde code-server se ve en cuanto recargas la intranet. Por último, para que los nombres lleguen al servidor, en vuestro DNS de Linux tendréis que crear un registro `A` para `www`, `intranet` y `duplicati`, todos con la IP del servidor donde corre Docker.
 
 ---
 
 ## 🔄 Cómo aplicar los cambios
 
-- **Has cambiado algo en `proxy/web/` o en `servicios/mi-web/`:** recarga el navegador (F5).
-- **Has cambiado `proxy/nginx.conf`:** `docker compose restart proxy`.
-- **Has cambiado `docker-compose.yml` o `.env`:** `docker compose up -d`.
-- **Al terminar la clase:** `docker compose down`. Los datos de los volúmenes (usuario de Portainer, base de datos…) se conservan, y otro día sigues con `docker compose up -d`.
+Lo que tienes que hacer depende de qué fichero hayas cambiado. Si has tocado algo en `proxy/web/` o en `servicios/mi-web/`, basta con recargar el navegador con F5, porque son volúmenes. Si has cambiado `proxy/nginx.conf`, tienes que reiniciar el proxy con `docker compose restart proxy` para que lea la nueva configuración. Y si has cambiado `docker-compose.yml` o `.env`, ejecuta `docker compose up -d`, que crea o recrea los contenedores que hayan cambiado.
+
+Al terminar la clase puedes parar todo con `docker compose down`. Los datos guardados en volúmenes, como el usuario de Portainer o la base de datos, se conservan, y otro día puedes seguir donde lo dejaste con `docker compose up -d`.
 
 ---
 
 ## 🩺 Problemas frecuentes
 
-Lo primero, siempre: `docker compose ps` y `docker compose logs proxy`.
+Cuando algo no funcione, empieza siempre por `docker compose ps`, para ver qué contenedores están en marcha, y por `docker compose logs proxy`, para leer los errores del proxy.
 
 | Síntoma | Causa probable | Solución |
 |---|---|---|
@@ -566,11 +537,11 @@ Lo primero, siempre: `docker compose ps` y `docker compose logs proxy`.
 
 ## 📤 Entrega
 
-Así debería quedar tu portal (la caja de Dozzle solo si haces el ⭐ Reto):
+Cuando termines, tu portal debería quedar como el de la imagen. La caja de Dozzle solo aparecerá si has hecho el ⭐ Reto.
 
 ![Portal final con todos los servicios](docs/img/portal-final.png)
 
-**Lista de comprobación:**
+Antes de entregar, repasa esta lista:
 
 - [ ] El portal muestra tu nombre.
 - [ ] `/whoami/`, `/mi-web/` y `/adminer/` funcionan y tienen su caja en el portal.
@@ -578,14 +549,17 @@ Así debería quedar tu portal (la caja de Dozzle solo si haces el ⭐ Reto):
 - [ ] Adminer conecta con la base de datos `db`.
 - [ ] `whoami` funciona en `localhost/whoami/` **y** en `whoami.localhost`, y Uptime Kuma en `kuma.localhost` con su caja en el portal.
 - [ ] `.env.template` incluye `DB_PASSWORD` y el `.env` **no** está en el repositorio.
-- [ ] Has creado `RESPUESTAS.md` en la raíz del repositorio (junto a este README) con las respuestas a estas preguntas (2-3 líneas cada una):
-  1. ¿Por qué solo el servicio `proxy` tiene `ports`? ¿Qué se gana con ello?
-  2. Al abrir `localhost/whoami/hola`, ¿qué ruta recibe whoami? ¿Qué línea del `nginx.conf` se encarga de eso?
-  3. ¿Por qué tu web salía sin estilos y cómo lo arreglaste?
-  4. ¿Por qué la base de datos no tiene un `location` en el proxy?
-  5. ¿Qué diferencia hay entre publicar por ruta y por subdominio? ¿Por qué Uptime Kuma necesita subdominio y code-server no?
+- [ ] Has creado `RESPUESTAS.md` en la raíz del repositorio, junto a este README, con las respuestas a las preguntas de abajo.
 
-Sube tus cambios:
+En `RESPUESTAS.md` responde a cada pregunta con dos o tres frases, explicándolo con tus palabras:
+
+1. ¿Por qué solo el servicio `proxy` tiene `ports`? ¿Qué se gana con ello?
+2. Al abrir `localhost/whoami/hola`, ¿qué ruta recibe whoami? ¿Qué línea del `nginx.conf` se encarga de eso?
+3. ¿Por qué tu web salía sin estilos y cómo lo arreglaste?
+4. ¿Por qué la base de datos no tiene un `location` en el proxy?
+5. ¿Qué diferencia hay entre publicar por ruta y por subdominio? ¿Por qué Uptime Kuma necesita subdominio y code-server no?
+
+Por último, sube tus cambios a GitHub:
 
 ```bash
 git add .
@@ -593,6 +567,6 @@ git commit -m "Práctica reverse proxy"
 git push
 ```
 
-Comprueba en GitHub que están todos los ficheros y que **no** aparece `.env`.
+Comprueba en la página de tu repositorio que están todos los ficheros y que **no** aparece el `.env`.
 
 ¡Suerte! 🚀
