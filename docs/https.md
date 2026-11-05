@@ -123,6 +123,15 @@ Verás unas líneas de puntos y símbolos `+` mientras genera la clave. Esto es 
 | `-subj "/CN=innovatechsolutions.com"` | El nombre principal del certificado |
 | `-addext "subjectAltName=…"` | Los **nombres para los que vale**. El `*` cubre **un solo nivel**: `www.innovatechsolutions.com` e `intranet.innovatechsolutions.com` sí; `www.intranet.innovatechsolutions.com` no. Si usas un nombre con dos niveles, añádelo entero a la lista |
 
+El `*` del certificado sustituye **exactamente una etiqueta** entre puntos, no «cualquier cosa». Es una regla de los navegadores, no de nginx:
+
+| Nombre pedido | ¿Lo cubre `*.innovatechsolutions.com`? |
+|---|---|
+| `www.innovatechsolutions.com` | Sí: `*` = `www` |
+| `intranet.innovatechsolutions.com` | Sí: `*` = `intranet` |
+| `www.intranet.innovatechsolutions.com` | No: harían falta dos etiquetas. Añádelo entero a la lista, o mejor usa `intranet.…` |
+| `innovatechsolutions.com` | No: no tiene nada delante. Por eso va aparte en la lista (`DNS:innovatechsolutions.com`) |
+
 > Si vuestro dominio es otro, cámbialo en `-subj` y en `-addext`, y pon vuestro nombre a los dos ficheros. Acuérdate de usar los mismos nombres de fichero en el Paso 4.
 
 **3. Mira qué ha creado:**
