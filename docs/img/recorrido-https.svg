@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="660" viewBox="0 0 960 660" role="img" aria-label="Recorrido de una petición con HTTPS en cinco pasos: el navegador pide por http, nginx responde 301 a https, el navegador vuelve por el 443 y nginx le enseña el certificado, el navegador comprueba el nombre y si se fía del firmante, y por último todo va cifrado y llega la página">
+  <title>Recorrido de una petición con HTTPS</title>
+  <defs>
+    <style>
+      .s { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+      .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+      .h1 { font-size: 22px; font-weight: 700; fill: #111827; }
+      .st { font-size: 15px; font-weight: 700; fill: #111827; }
+      .ex { font-size: 13px; fill: #6b7280; }
+      .sm { font-size: 13px; }
+      .code { font-size: 13px; fill: #111827; }
+      .code12 { font-size: 12.5px; }
+      .num { font-size: 14px; font-weight: 700; fill: #ffffff; }
+    </style>
+    <g id="cerrado">
+      <rect x="0" y="10" width="18" height="14" rx="3" fill="#00742c"/>
+      <path d="M4 10 V6 a5 5 0 0 1 10 0 V10" fill="none" stroke="#00742c" stroke-width="2.5"/>
+    </g>
+    <g id="abierto">
+      <rect x="0" y="10" width="18" height="14" rx="3" fill="#b91c1c"/>
+      <path d="M14 10 V3 a5 5 0 0 0 -10 0 V7" fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+    </g>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="959" height="659" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="s h1" x="28" y="44">Recorrido de una petición con HTTPS</text>
+
+  <line x1="48" y1="96" x2="48" y2="570" stroke="#d1d5db" stroke-width="2"/>
+  <g stroke="#e5e7eb" stroke-width="1">
+    <line x1="74" y1="166" x2="932" y2="166"/>
+    <line x1="74" y1="270" x2="932" y2="270"/>
+    <line x1="74" y1="408" x2="932" y2="408"/>
+    <line x1="74" y1="540" x2="932" y2="540"/>
+  </g>
+
+  <!-- ===== 1 ===== -->
+  <circle cx="48" cy="96" r="13" fill="#111827"/><text class="s num" x="48" y="101" text-anchor="middle">1</text>
+  <text class="s st" x="74" y="101">El navegador pide <tspan class="m" font-weight="400">http://www.innovatechsolutions.com/</tspan></text>
+  <text class="s ex" x="74" y="121">Llega al puerto <tspan class="m">80</tspan> del proxy.</text>
+  <rect x="560" y="72" width="372" height="76" rx="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <path d="M560 82 a10 10 0 0 1 10 -10 h352 a10 10 0 0 1 10 10 v12 h-372 z" fill="#f3f4f6"/>
+  <text class="m code" x="576" y="116">GET / HTTP/1.1</text>
+  <text class="m code" x="576" y="136">Host: www.innovatechsolutions.com</text>
+
+  <!-- ===== 2 ===== -->
+  <circle cx="48" cy="196" r="13" fill="#111827"/><text class="s num" x="48" y="201" text-anchor="middle">2</text>
+  <text class="s st" x="74" y="201">nginx responde con una redirección (301)</text>
+  <text class="s ex" x="74" y="221">Es el <tspan class="m">server</tspan> del puerto 80: no sirve páginas, solo manda a https.</text>
+  <text class="m code12" x="74" y="241" fill="#111827">return 301 https://$host$request_uri;</text>
+  <rect x="560" y="176" width="372" height="76" rx="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <path d="M560 186 a10 10 0 0 1 10 -10 h352 a10 10 0 0 1 10 10 v12 h-372 z" fill="#f3f4f6"/>
+  <text class="m code" x="576" y="220">HTTP/1.1 301 Moved Permanently</text>
+  <text class="m code" x="576" y="240">Location: https://www.innovatechsolutions.com/</text>
+
+  <!-- ===== 3 ===== -->
+  <circle cx="48" cy="300" r="13" fill="#111827"/><text class="s num" x="48" y="305" text-anchor="middle">3</text>
+  <text class="s st" x="74" y="305">El navegador vuelve a pedirla, ahora por el 443</text>
+  <text class="s ex" x="74" y="325">Antes de enviar nada, nginx le enseña su certificado.</text>
+  <text class="s ex" x="74" y="345">Es el fichero <tspan class="m">innovatech.crt</tspan> que montaste en el proxy.</text>
+  <rect x="560" y="282" width="372" height="118" rx="10" fill="#ffffff" stroke="#009639" stroke-width="2"/>
+  <use href="#cerrado" x="576" y="292"/>
+  <text class="m sm" x="604" y="310" font-weight="700" fill="#00742c">innovatech.crt</text>
+  <text class="s ex" x="576" y="334">Vale para:</text>
+  <text class="m code12" x="660" y="334" fill="#111827">innovatechsolutions.com,</text>
+  <text class="m code12" x="660" y="350" fill="#111827">*.innovatechsolutions.com</text>
+  <text class="s ex" x="576" y="370">Firmado por:</text>
+  <text class="m code12" x="660" y="370" fill="#111827">innovatechsolutions.com (él mismo)</text>
+  <text class="s ex" x="576" y="390">Caduca:</text>
+  <text class="m code12" x="660" y="390" fill="#111827">a los 825 días</text>
+
+  <!-- ===== 4 ===== -->
+  <circle cx="48" cy="436" r="13" fill="#111827"/><text class="s num" x="48" y="441" text-anchor="middle">4</text>
+  <text class="s st" x="74" y="441">El navegador examina el certificado</text>
+  <text class="s ex" x="74" y="461">¿Coincide el nombre? Sí: <tspan class="m">www.</tspan> encaja en <tspan class="m">*.innovatechsolutions.com</tspan> ✓</text>
+  <text class="s ex" x="74" y="481">¿Me fío de quien lo firma? Depende del PC →</text>
+  <rect x="560" y="418" width="372" height="50" rx="8" fill="#f0fdf4" stroke="#009639" stroke-width="1.5"/>
+  <use href="#cerrado" x="574" y="430"/>
+  <text class="s sm" x="604" y="438" fill="#111827"><tspan class="m">innovatech.crt</tspan> instalado en el PC (Paso 6)</text>
+  <text class="s sm" x="604" y="457" font-weight="700" fill="#00742c">→ candado, sin aviso</text>
+  <rect x="560" y="478" width="372" height="50" rx="8" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <use href="#abierto" x="574" y="490"/>
+  <text class="s sm" x="604" y="498" fill="#111827">Sin instalar → aviso «La conexión no es privada»</text>
+  <text class="s ex" x="604" y="517">Se puede continuar (va cifrada igual).</text>
+
+  <!-- ===== 5 ===== -->
+  <circle cx="48" cy="570" r="13" fill="#111827"/><text class="s num" x="48" y="575" text-anchor="middle">5</text>
+  <text class="s st" x="74" y="575">Se acuerda una clave y todo va cifrado</text>
+  <text class="s ex" x="74" y="595">El proxy pide la página a <tspan class="m">web-publica</tspan> y la devuelve. Candado en la barra.</text>
+  <rect x="560" y="552" width="372" height="76" rx="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <path d="M560 562 a10 10 0 0 1 10 -10 h352 a10 10 0 0 1 10 10 v12 h-372 z" fill="#f3f4f6"/>
+  <text class="m code" x="576" y="596">HTTP/1.1 200 OK</text>
+  <text class="m code" x="576" y="616">&lt;title&gt;InnovaTech Solutions&lt;/title&gt;</text>
+  <use href="#cerrado" x="898" y="588"/>
+</svg>

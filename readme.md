@@ -500,6 +500,8 @@ Duplicati es la única excepción. No funciona en una ruta, porque pide sus arch
 
 La carpeta `intranet/` se monta como volumen en dos contenedores: en el proxy, que la sirve, y en code-server, que la edita. Así, un cambio hecho desde code-server se ve en cuanto recargas la intranet. Por último, para que los nombres lleguen al servidor, en vuestro DNS de Linux tendréis que crear un registro `A` para `www`, `intranet` y `duplicati`, todos con la IP del servidor donde corre Docker.
 
+**HTTPS.** En la empresa, la web y la intranet tienen que ir cifradas. Cómo generar el certificado, montarlo en el proxy, pasar los `server` a `443 ssl` y quitar el aviso del navegador en los PC, paso a paso y con diagramas: [docs/https.md](docs/https.md).
+
 ---
 
 ## 🔄 Cómo aplicar los cambios

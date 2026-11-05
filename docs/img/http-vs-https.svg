@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="448" viewBox="0 0 960 448" role="img" aria-label="Comparación entre HTTP y HTTPS: por HTTP el usuario y la clave viajan legibles y cualquiera en la red los lee; por HTTPS viajan cifrados y solo se ve ruido">
+  <rect x="0.5" y="0.5" width="959" height="447" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 8" refX="8" refY="4" markerWidth="10" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#4b5563"/>
+    </marker>
+    <style>
+      .s { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+      .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+      .h1 { font-size: 22px; font-weight: 700; fill: #111827; }
+      .box { font-size: 16px; font-weight: 700; }
+      .st { font-size: 15px; font-weight: 700; }
+      .sm { font-size: 13px; }
+      .cap { font-size: 12.5px; fill: #6b7280; }
+      .code { font-size: 13px; fill: #111827; }
+      .wire { fill: none; stroke: #4b5563; stroke-width: 2; }
+    </style>
+    <g id="navegador">
+      <rect x="0" y="0" width="156" height="66" rx="12" fill="#ffffff" stroke="#6b7280" stroke-width="2"/>
+      <path d="M0 24 V12 a12 12 0 0 1 12 -12 H144 a12 12 0 0 1 12 12 V24 Z" fill="#f3f4f6"/>
+      <line x1="0" y1="24" x2="156" y2="24" stroke="#e5e7eb"/>
+      <circle cx="14" cy="12" r="3.5" fill="#9ca3af"/><circle cx="26" cy="12" r="3.5" fill="#9ca3af"/><circle cx="38" cy="12" r="3.5" fill="#9ca3af"/>
+      <text x="78" y="51" text-anchor="middle" class="s box" fill="#111827">Navegador</text>
+    </g>
+    <g id="servidor">
+      <rect x="0" y="0" width="156" height="66" rx="12" fill="#e8f5ec" stroke="#009639" stroke-width="2"/>
+      <text x="78" y="36" text-anchor="middle" class="s box" fill="#00742c">proxy nginx</text>
+    </g>
+    <g id="abierto">
+      <rect x="0" y="10" width="18" height="14" rx="3" fill="#b91c1c"/>
+      <path d="M14 10 V3 a5 5 0 0 0 -10 0 V7" fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+    </g>
+    <g id="cerrado">
+      <rect x="0" y="10" width="18" height="14" rx="3" fill="#00742c"/>
+      <path d="M4 10 V6 a5 5 0 0 1 10 0 V10" fill="none" stroke="#00742c" stroke-width="2.5"/>
+    </g>
+    <g id="ojo">
+      <path d="M0 8 Q12 -5 24 8 Q12 21 0 8 Z" fill="#ffffff" stroke="#4b5563" stroke-width="2"/>
+      <circle cx="12" cy="8" r="4" fill="#4b5563"/>
+    </g>
+  </defs>
+
+  <text x="28" y="44" class="s h1">HTTP y HTTPS: qué ve alguien que escucha en la red</text>
+
+  <!-- ===== HTTP ===== -->
+  <use href="#abierto" x="28" y="76"/>
+  <text x="56" y="92" class="s st" fill="#b91c1c">HTTP · puerto 80 · sin cifrar</text>
+  <use href="#navegador" x="28" y="112"/>
+  <use href="#servidor" x="776" y="112"/>
+  <text x="854" y="166" text-anchor="middle" class="m sm" fill="#6b7280">escucha en :80</text>
+  <path d="M184 145 H380" class="wire"/>
+  <path d="M580 145 H774" class="wire" marker-end="url(#flecha)"/>
+  <rect x="380" y="124" width="200" height="42" rx="8" fill="#ffffff" stroke="#b91c1c" stroke-width="2"/>
+  <text x="480" y="150" text-anchor="middle" class="m code">usuario=ana&amp;clave=1234</text>
+  <use href="#ojo" x="468" y="184"/>
+  <text x="480" y="226" text-anchor="middle" class="s cap">Cualquiera en la red lo lee tal cual</text>
+
+  <!-- ===== HTTPS ===== -->
+  <use href="#cerrado" x="28" y="246"/>
+  <text x="56" y="262" class="s st" fill="#00742c">HTTPS · puerto 443 · cifrado</text>
+  <use href="#navegador" x="28" y="282"/>
+  <use href="#servidor" x="776" y="282"/>
+  <text x="854" y="336" text-anchor="middle" class="m sm" fill="#6b7280">escucha en :443</text>
+  <path d="M184 315 H380" class="wire"/>
+  <path d="M580 315 H774" class="wire" marker-end="url(#flecha)"/>
+  <rect x="380" y="294" width="200" height="42" rx="8" fill="#ffffff" stroke="#00742c" stroke-width="2"/>
+  <text x="480" y="320" text-anchor="middle" class="m code">k8#Pz…Qv2=!x9Lm</text>
+  <use href="#ojo" x="468" y="354"/>
+  <text x="480" y="396" text-anchor="middle" class="s cap">Solo ve ruido: no puede leerlo</text>
+
+  <text x="28" y="430" class="s sm" fill="#111827">Para cifrar, el navegador necesita el <tspan font-weight="700">certificado</tspan> del servidor: le dice quién es y con qué clave hablarle.</text>
+</svg>

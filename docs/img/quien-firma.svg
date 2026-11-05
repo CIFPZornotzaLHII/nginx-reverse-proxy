@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Quién firma el certificado: una autoridad pública como Let's Encrypt no puede porque el dominio no es vuestro en internet; lo firmamos nosotros con OpenSSL, nginx lo sirve y se instala el .crt en los PC para que el navegador no avise">
+  <rect x="0.5" y="0.5" width="959" height="539" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <defs>
+    <style>
+      .s { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+      .m { font-family: Consolas, ui-monospace, Menlo, monospace; }
+      .h1 { font-size: 22px; font-weight: 700; fill: #111827; }
+      .box { font-size: 16px; font-weight: 700; }
+      .st { font-size: 15px; font-weight: 700; }
+      .sm { font-size: 13px; }
+      .cap { font-size: 12.5px; fill: #6b7280; }
+      .code { font-size: 12.5px; }
+      .num { font-size: 14px; font-weight: 700; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <text x="28" y="44" class="s h1">¿Quién firma el certificado?</text>
+
+  <!-- ===== Autoridad pública ===== -->
+  <rect x="28" y="72" width="440" height="400" rx="14" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+  <text x="48" y="102" class="s box" fill="#111827">Autoridad pública (p. ej. Let's Encrypt)</text>
+  <line x1="28" y1="118" x2="468" y2="118" stroke="#e5e7eb" stroke-width="2"/>
+
+  <circle cx="60" cy="147" r="13" fill="#111827"/><text x="60" y="152" text-anchor="middle" class="s num">1</text>
+  <text x="84" y="152" class="s st" fill="#111827">Pides un certificado para tu dominio.</text>
+
+  <circle cx="60" cy="201" r="13" fill="#111827"/><text x="60" y="206" text-anchor="middle" class="s num">2</text>
+  <text x="84" y="206" class="s st" fill="#111827">Comprueba que el dominio es tuyo:</text>
+  <text x="84" y="226" class="s cap">lo busca en el DNS de internet y te pide una prueba.</text>
+
+  <circle cx="60" cy="267" r="13" fill="#b91c1c"/><text x="60" y="272" text-anchor="middle" class="s num">✗</text>
+  <text x="84" y="272" class="s st" fill="#b91c1c">El dominio no es vuestro en internet.</text>
+  <text x="84" y="292" class="s cap">Nadie puede comprobar que lo sea, así que no lo firma.</text>
+
+  <rect x="48" y="330" width="400" height="120" rx="10" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="64" y="356" class="s st" fill="#111827">Así funcionan las webs reales</text>
+  <text x="64" y="380" class="s cap">El navegador trae de fábrica una lista de autoridades</text>
+  <text x="64" y="398" class="s cap">en las que confía. Si una de ellas firma el certificado,</text>
+  <text x="64" y="416" class="s cap">sale el candado sin preguntar nada.</text>
+  <text x="64" y="436" class="s cap">Hace falta un dominio registrado a vuestro nombre.</text>
+
+  <!-- ===== Autofirmado ===== -->
+  <rect x="492" y="72" width="440" height="400" rx="14" fill="#ffffff" stroke="#009639" stroke-width="2"/>
+  <text x="512" y="102" class="s box" fill="#00742c">Autofirmado: lo firmamos nosotros</text>
+  <line x1="492" y1="118" x2="932" y2="118" stroke="#a7d9b8" stroke-width="2"/>
+
+  <circle cx="524" cy="147" r="13" fill="#00742c"/><text x="524" y="152" text-anchor="middle" class="s num">1</text>
+  <text x="548" y="152" class="s st" fill="#111827">OpenSSL, en un contenedor, crea dos ficheros:</text>
+
+  <rect x="548" y="168" width="176" height="66" rx="8" fill="#ffffff" stroke="#b91c1c" stroke-width="2"/>
+  <text x="560" y="190" class="m sm" font-weight="700" fill="#b91c1c">innovatech.key</text>
+  <text x="560" y="208" class="s cap">clave PRIVADA, secreta</text>
+  <text x="560" y="224" class="s cap">no sale del servidor</text>
+
+  <rect x="740" y="168" width="176" height="66" rx="8" fill="#ffffff" stroke="#00742c" stroke-width="2"/>
+  <text x="752" y="190" class="m sm" font-weight="700" fill="#00742c">innovatech.crt</text>
+  <text x="752" y="208" class="s cap">certificado PÚBLICO</text>
+  <text x="752" y="224" class="s cap">se instala en los PC</text>
+
+  <circle cx="524" cy="265" r="13" fill="#00742c"/><text x="524" y="270" text-anchor="middle" class="s num">2</text>
+  <text x="548" y="270" class="s st" fill="#111827">nginx los carga y sirve https con ellos.</text>
+  <text x="548" y="290" class="m code" fill="#6b7280">ssl_certificate y ssl_certificate_key (nginx.conf)</text>
+
+  <circle cx="524" cy="321" r="13" fill="#00742c"/><text x="524" y="326" text-anchor="middle" class="s num">3</text>
+  <text x="548" y="326" class="s st" fill="#111827">El navegador no conoce al firmante (nosotros)</text>
+  <text x="548" y="346" class="s cap">y avisa: «La conexión no es privada».</text>
+
+  <circle cx="524" cy="377" r="13" fill="#00742c"/><text x="524" y="382" text-anchor="middle" class="s num">4</text>
+  <text x="548" y="382" class="s st" fill="#111827">Solución: instalar innovatech.crt en cada PC</text>
+  <text x="548" y="402" class="s cap">como autoridad de confianza (certutil).</text>
+  <text x="548" y="420" class="s cap">Después: candado y sin aviso.</text>
+
+  <!-- ===== En el reto ===== -->
+  <rect x="28" y="490" width="904" height="34" rx="10" fill="#f5fbff" stroke="#2496ed" stroke-width="1.5"/>
+  <text x="480" y="512" text-anchor="middle" class="s sm" fill="#111827">En el reto: red interna y un dominio que no es vuestro en internet → certificado autofirmado + instalar el <tspan class="m">.crt</tspan> en los PC.</text>
+</svg>
